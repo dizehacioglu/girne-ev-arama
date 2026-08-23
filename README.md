@@ -1,134 +1,91 @@
-# Girne'de Ev Arama — kurulum
+# Girne'de Ev Arama
 
 A single self-contained `index.html` — no build step, no framework, no
-server code. Paste a listing's page source (or fill fields by hand), track
-rent/rooms/bathrooms/lease length/status, tap to WhatsApp or call the
-listing's number, favorite the best ones. Data lives in a free Supabase
-Postgres table, so it's automatically available from any device — just
-open the same hosted link on her phone and on your computer.
+server code — for tracking apartment listings while hunting for a rental in
+Girne (Kyrenia), Cyprus. Paste a listing's page source (or fill fields by
+hand), track rent/rooms/bathrooms/lease length/status, tap to WhatsApp or
+call the listing's number, favorite the best ones, schedule visits on a
+calendar, and see everything plotted on a map. Data lives in a free
+Supabase Postgres table, so it stays in sync across every device you open
+the link on.
 
-This replaces the earlier Google Apps Script version. The reason: Apps
-Script's deployed app runs inside a sandboxed cross-origin iframe with no
-real devtools access, and code changes require manually creating a new
-deployment version or they silently don't take effect — both cost real
-debugging time. This version is just a normal webpage: normal browser
-console, redeploy = re-upload the file.
+## Features
 
-## 1. Create the database (~3 minutes)
+- Paste a listing's page source and auto-fill rent, rooms, bathrooms,
+  phone, title, a link back to the original listing, and its cover photo
+  (see "How auto-fill works" below) — or skip that and fill fields by hand
+- Everything is editable inline in the table at any time
+- Status pipeline — İletişime geçilecek → Yanıt bekleniyor → Ziyaret
+  planlandı → Ziyaret edildi → Uygun değil — color-coded so the stage is
+  visible at a glance
+- One-tap **WhatsApp** (pre-filled "is this still available?" message in
+  Turkish) and **Ara** (call) buttons
+- A star for favorites, independent of status, and a free-text note field
+- A toggleable **Takvim** (calendar) view showing every scheduled visit
+  across the month, color-coded by status — click a visit to jump straight
+  to that listing in the list
+- A toggleable **Harita** (map) view — every listing with known coordinates
+  plotted on an interactive map (via [Leaflet](https://leafletjs.com) +
+  free OpenStreetMap tiles, no API key needed), pins color-coded by status,
+  so it's obvious at a glance which listings are near each other. Click a
+  pin to jump straight to it in the list
+- Listings marked "Uygun değil" collapse out of the main list view by
+  default (and off the map), but their calendar visits still show
+- Responsive: a normal table on desktop, a stack of cards on mobile
 
-1. Go to [supabase.com](https://supabase.com) and create a free account /
-   sign in, then **New project**. Pick any name/region/password (the
-   password is for direct Postgres access, not needed for this app — save
-   it somewhere just in case).
-2. Once the project is ready, open the **SQL Editor** (left sidebar) →
-   **New query**, paste in the entire contents of `schema.sql` from this
-   folder, and click **Run**. This creates the `ilanlar` table and the
+## Setup
+
+1. **Create the database** — go to [supabase.com](https://supabase.com),
+   create a free project, open the **SQL Editor**, paste in the contents of
+   `schema.sql`, and run it. This creates the `ilanlar` table and its
    access policies.
-3. Go to **Project Settings → API Keys**. Copy two values:
-   - **Project URL** (looks like `https://xxxxxxxxxxxx.supabase.co`) — this
-     is on the main API settings page.
-   - **Publishable key** (starts with `sb_publishable_...`). If you don't
-     see one yet, there's a **Create new API Keys** button — click it, then
-     copy the Publishable key value. This is Supabase's current
-     recommended key for client-side apps like this one (it replaces the
-     older "anon" key you may see referenced in older tutorials — same
-     purpose, safe to put in a public page, same access rules).
-
-## 2. Configure the app
-
-Open `index.html` in this folder and find these two lines near the top of
-the `<script>` block:
-
-```js
-var SUPABASE_URL = 'YOUR_SUPABASE_URL';
-var SUPABASE_PUBLISHABLE_KEY = 'YOUR_SUPABASE_PUBLISHABLE_KEY';
-```
-
-Replace both placeholder strings with the values you copied. Save the
-file. (If you forget this step, the app shows a clear on-page message
-telling you what's missing instead of failing silently.)
-
-## 3. Host it (pick one — the file doesn't care which)
-
-**Option A — GitHub Pages** (you already run `dizehacioglu.github.io`, so
-this is zero new infrastructure):
-1. Create a new repo (or a folder in an existing Pages-enabled repo), add
-   `index.html`.
-2. Push it. In the repo's **Settings → Pages**, set the source branch —
-   GitHub gives you a URL like `https://<you>.github.io/<repo>/`.
-3. That URL is what you send to your mom and use yourself.
-
-**Option B — Netlify Drop** (fastest, no git or account needed for a first
-deploy):
-1. Go to [app.netlify.com/drop](https://app.netlify.com/drop).
-2. Drag this whole folder (or just `index.html`) onto the page.
-3. Netlify gives you a live URL immediately. Create a free account if you
-   want to keep the same URL for future re-uploads (drag the folder again
-   any time you edit `index.html`).
-
-Either way: whenever you edit `index.html`, redeploying is just "push" or
-"drag the folder again" — no separate "create a new version" step to
-forget.
+2. **Configure the app** — open `index.html`, find these two lines near the
+   top of the `<script>` block, and fill in your own project's values from
+   **Project Settings → API Keys** (the **Publishable key**, not the
+   secret one):
+   ```js
+   var SUPABASE_URL = 'YOUR_SUPABASE_URL';
+   var SUPABASE_PUBLISHABLE_KEY = 'YOUR_SUPABASE_PUBLISHABLE_KEY';
+   ```
+   If you forget this step, the app shows an on-page message telling you
+   what's missing instead of failing silently.
+3. **Host it** — this is a static file, so any static host works (GitHub
+   Pages, Netlify, Vercel, Cloudflare Pages, etc.). Whenever you edit
+   `index.html`, redeploying is just re-uploading the file — no build step,
+   no "create a new version" step to remember.
 
 ## How auto-fill actually works
 
-Both hangiev.com and 101evler.com sit behind Cloudflare bot-protection,
-which blocks any automated fetch of the page — so the app can't just take a
-URL and go get the listing itself. Instead, on a listing page:
+Real-estate listing sites commonly sit behind bot-protection that blocks
+automated fetching, so the app can't just take a URL and go get the
+listing itself. Instead, on a listing page:
 
-Right-click → **"Sayfa Kaynağını Görüntüle" / "View Page Source"** (or
-Ctrl+U), select all (Ctrl+A), copy (Ctrl+C), and paste into the app's
-textarea. This is the real HTML of the page — since it's not a live fetch,
-Cloudflare has nothing to block. From it, the app reads exact rent, rooms,
-bathrooms, phone, title, the listing's own link, and its cover photo (for
-the thumbnail) — all parsed right in the browser, no server involved at
-all.
+Right-click → **"View Page Source"** (or Ctrl+U / Cmd+Option+U), select all,
+copy, and paste into the app's textarea. This is the real HTML of the page
+— since it's not a live fetch, bot-protection has nothing to block. From
+it, the app reads rent, rooms, bathrooms, phone, title, the listing's own
+link, its cover photo, and coordinates when present — all parsed entirely
+in the browser, no server involved.
 
 This only works from a desktop/laptop browser — mobile browsers don't have
-an easy "view source" option, so this is a computer-only step.
+an easy "view source" option, so it's a computer-only step. There's no URL
+field to type into; the listing's link is detected automatically from the
+pasted source (via its `og:url`/canonical tag) and used to make the
+listing's title clickable and to show its cover photo.
 
-**Manual entry fields only appear after she's pasted something** (pre-filled
-with whatever was found, or empty if nothing was) — this keeps the
-add-listing form from showing a big intimidating form up front. If she
-doesn't have the page source for a listing, there's a small "veya elle
-gir →" link that reveals the manual fields directly.
-
-There's no URL field to type into — the listing's link is detected
-automatically from the pasted source (via its `og:url`/canonical tag) and
-used to make the listing's title clickable and to show its cover photo. If
-nothing was pasted (manual entry only), the card just won't have a link or
-thumbnail — still fully usable, contact info and everything else works.
+The parsing logic targets the HTML structure of specific listing sites
+(currently hangiev.com and 101evler.com) — pasting source from a different
+site may fill in fewer fields, or none. Either way, nothing is required
+before saving: an entry is created immediately from whatever was found (or
+blank), and every field stays editable afterward.
 
 ## Security note
 
 There's no login. The publishable key is public in the page's source by
-design — that's how every client-only Supabase app works, and it's exactly
-as safe to expose as the older "anon" key it replaces — and the policies in
-`schema.sql` let anyone who has that key and your Project URL read and
-write the `ilanlar` table. In practice that means: whoever has the hosted
-link can see and edit the data (nobody else can find it without the link).
-That's an acceptable trade-off for a rental search list that isn't
+design — that's how every client-only Supabase app works — and the
+policies in `schema.sql` let anyone who has that key and your Project URL
+read and write the `ilanlar` table. In practice that means: whoever has the
+hosted link can see and edit the data (nobody else can find it without the
+link). That's an acceptable trade-off for a rental search list that isn't
 sensitive, but it's worth knowing plainly rather than assuming it's private
 just because there's no visible login screen.
-
-## Everything the app tracks per listing
-
-- Auto-detected link to the original listing and a small cover-photo
-  thumbnail (both only available when page source was pasted)
-- Title (clickable, opens the original listing), neighborhood, rent +
-  currency, rooms (e.g. 2+1), bathrooms, lease duration
-- Owner's phone number, with one-tap **WhatsApp** (pre-filled "is this still
-  available?" message in Turkish) and **Ara** (call) buttons
-- Status: İletişime geçilecek → Yanıt bekleniyor → Ziyaret planlandı →
-  Ziyaret edildi → Uygun değil (color-coded so the stage is visible at a
-  glance)
-- A scheduled visit date + time per listing, with a toggleable **Takvim**
-  (calendar) view showing every upcoming visit across the month — click a
-  visit in the calendar to jump straight to that listing in the list
-- A toggleable **Harita** (map) view — every listing with detected
-  coordinates plotted on an interactive map (via [Leaflet](https://leafletjs.com)
-  + free OpenStreetMap tiles, loaded from a CDN, no API key or account
-  needed), so it's obvious at a glance which listings are actually near each
-  other. Click a pin to see its photo/title and jump straight to it in the list
-- A star for favorites, independent of status
-- A free-text note field
