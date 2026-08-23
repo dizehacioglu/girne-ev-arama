@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Girne'de Ev Arama</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUyIiByPSI0NiIgZmlsbD0iI2Y0ZjJlZSIvPjxwb2x5Z29uIHBvaW50cz0iNTAsMjYgODAsNTIgNjgsNTIgNjgsODAgMzIsODAgMzIsNTIgMjAsNTIiIGZpbGw9IiNhODYwM2YiLz48cmVjdCB4PSI0MiIgeT0iNjIiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxOCIgcng9IjIiIGZpbGw9IiNmNGYyZWUiLz48cGF0aCBkPSJNNTAgMjIgQzQ4IDE3IDQxIDE4IDQxIDI0IEM0MSAyOSA1MCAzNSA1MCAzNSBDNTAgMzUgNTkgMjkgNTkgMjQgQzU5IDE4IDUyIDE3IDUwIDIyIFoiIGZpbGw9IiNkNGEwMTciLz48L3N2Zz4=">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root {
+    --bg: #f4f2ee;
+    --surface: #ffffff;
+    --surface-2: #ede8e0;
+    --ink: #292420;
+    --ink-soft: #5c554d;
+    --ink-faint: #8a8177;
+    --border: #e1dbd0;
+    --accent: #a8603f;
+    --accent-ink: #ffffff;
+    --accent-soft: #f3e3da;
+    --good: #4a7c59;
+    --good-soft: #e3ede5;
+    --warn: #b8863b;
+    --warn-soft: #f6ecd9;
+    --bad: #b3493a;
+    --bad-soft: #f5e0da;
+    --star: #d4a017;
+    --whatsapp: #3fa76a;
+    /* Status pipeline colors — deliberately spread across distinct hues
+       (gray/blue/orange/green/red), not just light/dark shades of the same
+       brand color, so adjacent stages are easy to tell apart at a glance
+       on the durum pill, calendar chip, and map pin alike. */
+    --status0: #8a8177;
+    --status0-soft: #ede8e0;
+    --status1: #2f6fb0;
+    --status1-soft: #dce9f6;
+    --status2: #a8603f;
+    --status2-soft: #f3e3da;
+    --status3: #2f7d4a;
+    --status3-soft: #ddeee1;
+    --status4: #c0392b;
+    --status4-soft: #f8dcd7;
+    --shadow: 0 1px 2px rgba(40,30,20,.06), 0 6px 18px rgba(40,30,20,.08);
+    --radius: 16px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1a17;
+      --surface: #262320;
+      --surface-2: #2f2b26;
+      --ink: #f1ede6;
+      --ink-soft: #cfc7ba;
+      --ink-faint: #948a7c;
+      --border: #3c3730;
+      --accent: #dd9270;
+      --accent-ink: #241813;
+      --accent-soft: #3a2c24;
+      --good: #8fc79e;
+      --good-soft: #24352a;
+      --warn: #e2b866;
+      --warn-soft: #3a301c;
+      --bad: #e2897a;
+      --bad-soft: #3a2420;
+      --star: #e8c34c;
+      --whatsapp: #6fcf97;
+      --status0: #948a7c;
+      --status0-soft: #2f2b26;
+      --status1: #7fb2e8;
+      --status1-soft: #21344a;
+      --status2: #dd9270;
+      --status2-soft: #3a2c24;
+      --status3: #7ecb8f;
+      --status3-soft: #223a29;
+      --status4: #ea6b57;
+      --status4-soft: #3d211c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    padding-bottom: 3rem;
+  }
+  .wrap { max-width: 1600px; margin: 0 auto; padding: 1.1rem 1rem 2rem; }
+  .narrow { max-width: 640px; margin: 0 auto; }
+  header.top { text-align: center; padding: 1.2rem 0 .6rem; }
+  header.top h1 { font-size: 1.4rem; margin: 0 0 .3rem; }
+  header.top p { margin: 0; color: var(--ink-soft); font-size: .92rem; }
+
+  .summary {
+    display: flex; gap: .5rem; flex-wrap: wrap; justify-content: center;
+    margin: 1rem 0 1.4rem;
+  }
+  .summary .chip {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: .35rem .8rem; font-size: .82rem; color: var(--ink-soft);
+  }
+  .summary .chip b { color: var(--ink); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 1rem; margin-bottom: 1rem;
+  }
+
+  label { display: block; font-size: .82rem; color: var(--ink-soft); margin: .6rem 0 .25rem; }
+  textarea {
+    width: 100%; padding: .6rem .7rem; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--ink); font-size: .95rem; font-family: inherit;
+    min-height: 3.2rem; resize: vertical;
+  }
+
+  button {
+    font-family: inherit; font-size: .92rem; border: none; border-radius: 10px;
+    padding: .6rem .9rem; cursor: pointer; font-weight: 600;
+  }
+  .btn-accent { background: var(--accent); color: var(--accent-ink); }
+  .btn-small { padding: .4rem .65rem; font-size: .8rem; }
+  .btn-danger { background: transparent; color: #b3493a; }
+
+  .fetch-msg { font-size: .82rem; margin-top: .4rem; }
+  .fetch-msg.ok { color: var(--good); }
+  .fetch-msg.warn { color: var(--warn); }
+
+  .star-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; line-height: 1; padding: 0; }
+  .star-btn.on { color: var(--star); }
+  .star-btn.off { color: var(--ink-faint); opacity: .5; }
+
+  .wa-btn, .call-btn {
+    display: inline-block; border: none; padding: .3rem .55rem; border-radius: 8px;
+    font-weight: 600; font-size: .78rem; white-space: nowrap; cursor: pointer; font-family: inherit;
+  }
+  .wa-btn { background: var(--whatsapp); color: #08331c; }
+  .call-btn { background: var(--accent-soft); color: var(--accent); }
+  .contact-buttons { display: flex; gap: .3rem; }
+
+  .notes-toggle {
+    font-size: .95rem; color: var(--ink-faint); background: none; border: none;
+    padding: .2rem .4rem; cursor: pointer; line-height: 1;
+  }
+
+  #listings { margin-top: 1.3rem; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+  table.listings-table { width: 100%; border-collapse: collapse; font-size: .88rem; background: var(--surface); }
+  .listings-table th, .listings-table td {
+    padding: .6rem .6rem; text-align: left; vertical-align: middle;
+    border-bottom: 1px solid var(--border); word-break: break-word;
+  }
+  .listings-table thead th {
+    background: var(--surface-2); color: var(--ink-soft); font-weight: 600;
+    font-size: .74rem; text-transform: uppercase; letter-spacing: .03em;
+    position: sticky; top: 0; white-space: nowrap;
+  }
+  .listings-table tbody tr:last-child td { border-bottom: none; }
+  .listings-table tbody tr:hover { background: var(--surface-2); }
+  .table-thumb { width: 132px; height: 132px; border-radius: 12px; object-fit: cover; display: block; background: var(--surface-2); }
+  .title-cell { min-width: 180px; max-width: 280px; }
+  .title-input {
+    font-weight: 600; font-family: inherit; resize: none; overflow: hidden;
+    white-space: normal; word-break: break-word; line-height: 1.3; display: block;
+  }
+  .title-link {
+    font-weight: 600; color: var(--accent); text-decoration: none;
+    display: inline-block; line-height: 1.3;
+  }
+  .title-link:hover { text-decoration: underline; }
+  .durum-select {
+    min-width: 150px; border: none; border-radius: 999px; padding: .4rem .7rem .4rem .9rem;
+    font-weight: 600; font-size: .8rem; font-family: inherit; cursor: pointer;
+  }
+  .durum-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  /* Status pipeline, faint -> in progress -> resolved, so the stage reads
+     at a glance without needing to read the label text. */
+  .durum-select.status-0 { background: var(--status0-soft); color: var(--status0); }
+  .durum-select.status-1 { background: var(--status1-soft); color: var(--status1); }
+  .durum-select.status-2 { background: var(--status2-soft); color: var(--status2); }
+  .durum-select.status-3 { background: var(--status3-soft); color: var(--status3); }
+  .durum-select.status-4 { background: var(--status4-soft); color: var(--status4); }
+  .mahalle-cell { min-width: 210px; }
+  .muted-cell { color: var(--ink-faint); }
+
+  .listings-table td.visit-cell { text-align: center; }
+  .visit-wrap { position: relative; display: inline-block; }
+  .visit-input-hidden {
+    position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;
+    border: 0; padding: 0; margin: -1px; overflow: hidden;
+  }
+  .visit-btn {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: .4rem .65rem; font-size: .8rem; color: var(--ink); cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+  }
+  .visit-btn:hover { border-color: var(--accent); }
+
+  .cell-input {
+    width: 100%; min-width: 60px; padding: .35rem .4rem; border-radius: 6px;
+    border: 1px solid transparent; background: transparent; color: var(--ink);
+    font-size: .85rem; font-family: inherit;
+  }
+  .cell-input:hover, .cell-input:focus { border-color: var(--border); background: var(--surface-2); outline: none; }
+  .mini-select { width: auto; min-width: 48px; padding: .35rem .2rem; }
+  .kira-cell { display: flex; gap: .25rem; align-items: center; }
+  .kira-cell .cell-input { min-width: 55px; }
+  .contact-cell { min-width: 150px; }
+
+  tr.notes-row { display: none; }
+  tr.notes-row.open { display: table-row; }
+  tr.notes-row td { background: var(--surface-2); }
+
+  .empty { text-align: center; color: var(--ink-faint); padding: 1.5rem 1rem; font-size: .9rem; }
+
+  .add-toggle { display: block; width: 100%; text-align: center; }
+
+  .hint { font-size: .8rem; color: var(--ink-faint); margin: .1rem 0 .4rem; }
+  .manual-link { display: block; text-align: center; font-size: .82rem; color: var(--ink-faint); background: none; border: none; padding: .6rem 0 .2rem; cursor: pointer; width: 100%; }
+
+  .setup-notice { background: var(--warn-soft); color: var(--warn); border-radius: var(--radius); padding: 1rem; font-size: .88rem; line-height: 1.5; }
+  .setup-notice code { background: rgba(0,0,0,.08); padding: .1rem .3rem; border-radius: 4px; }
+
+  .view-toggle { display: flex; gap: .4rem; justify-content: center; margin: .9rem 0 0; }
+  .view-btn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft);
+    border-radius: 999px; padding: .4rem .9rem; font-size: .82rem; font-weight: 600; cursor: pointer;
+  }
+  .view-btn.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+  .cal-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+  .cal-header { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: .9rem; }
+  .cal-title { font-weight: 700; font-size: 1.05rem; min-width: 160px; text-align: center; }
+  .cal-nav {
+    background: var(--surface-2); border: none; border-radius: 8px; width: 2rem; height: 2rem;
+    font-size: 1.1rem; color: var(--ink); cursor: pointer;
+  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .4rem; }
+  .cal-grid-labels { margin-bottom: .3rem; }
+  .cal-label { text-align: center; font-size: .74rem; color: var(--ink-faint); text-transform: uppercase; font-weight: 600; }
+  .cal-cell { min-height: 92px; border: 1px solid var(--border); border-radius: 10px; padding: .35rem; background: var(--surface); overflow: hidden; }
+  .cal-cell.cal-empty { border: none; background: transparent; }
+  .cal-cell.cal-today { border-color: var(--accent); background: var(--accent-soft); }
+  .cal-daynum { font-size: .78rem; color: var(--ink-faint); margin-bottom: .25rem; font-weight: 600; }
+  .cal-chip {
+    border-radius: 6px; padding: .15rem .4rem;
+    font-size: .72rem; margin-bottom: .2rem; cursor: pointer; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* Same faint -> in progress -> resolved palette as .durum-select, so a
+     visit's stage reads at a glance on the calendar too. */
+  .cal-chip.status-0 { background: var(--status0-soft); color: var(--status0); }
+  .cal-chip.status-1 { background: var(--status1-soft); color: var(--status1); }
+  .cal-chip.status-2 { background: var(--status2-soft); color: var(--status2); }
+  .cal-chip.status-3 { background: var(--status3-soft); color: var(--status3); }
+  .cal-chip.status-4 { background: var(--status4-soft); color: var(--status4); }
+  .cal-chip:hover { filter: brightness(0.9); }
+  .cal-chip-time { font-weight: 700; }
+  .cal-empty-note { text-align: center; color: var(--ink-faint); font-size: .84rem; padding: .5rem 0 0; }
+
+  tr.flash-row { animation: flash-row-fade 1.6s ease; }
+  @keyframes flash-row-fade {
+    0% { background: var(--accent-soft); }
+    100% { background: transparent; }
+  }
+
+  #mapContainer { height: 600px; width: 100%; border-radius: var(--radius); }
+  .map-popup { min-width: 180px; }
+  .map-popup img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; margin-bottom: .4rem; display: block; }
+  .map-popup .map-popup-title { font-weight: 700; font-size: .86rem; margin-bottom: .2rem; }
+  .map-popup .map-popup-mahalle { color: var(--ink-faint); font-size: .78rem; margin-bottom: .5rem; }
+  .map-popup button {
+    background: var(--accent); color: var(--accent-ink); border: none; border-radius: 8px;
+    padding: .35rem .6rem; font-size: .78rem; font-weight: 600; cursor: pointer; width: 100%;
+  }
+  .map-empty-note { text-align: center; color: var(--ink-faint); font-size: .84rem; padding: .8rem 0 0; }
+
+  .thumb-pin { background: none; border: none; }
+  .thumb-pin-circle {
+    width: 46px; height: 46px; border-radius: 50%; overflow: hidden;
+    border: 3px solid var(--status2); background: var(--surface-2); box-shadow: var(--shadow);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .thumb-pin-circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb-pin-circle.thumb-pin-broken img { display: none; }
+  .thumb-pin-circle.thumb-pin-broken::after { content: '🏠'; font-size: 1.3rem; }
+  .thumb-pin-fallback { font-size: 1.3rem; }
+  .thumb-pin-arrow {
+    width: 0; height: 0; margin: -3px auto 0;
+    border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 10px solid var(--status2);
+  }
+  /* Pin border/arrow recolored per listing status — same palette as the
+     durum pill and calendar chip. */
+  .thumb-pin-circle.pin-status-0 { border-color: var(--status0); }
+  .thumb-pin-circle.pin-status-1 { border-color: var(--status1); }
+  .thumb-pin-circle.pin-status-2 { border-color: var(--status2); }
+  .thumb-pin-circle.pin-status-3 { border-color: var(--status3); }
+  .thumb-pin-circle.pin-status-4 { border-color: var(--status4); }
+  .thumb-pin.pin-status-0 .thumb-pin-arrow { border-top-color: var(--status0); }
+  .thumb-pin.pin-status-1 .thumb-pin-arrow { border-top-color: var(--status1); }
+  .thumb-pin.pin-status-2 .thumb-pin-arrow { border-top-color: var(--status2); }
+  .thumb-pin.pin-status-3 .thumb-pin-arrow { border-top-color: var(--status3); }
+  .thumb-pin.pin-status-4 .thumb-pin-arrow { border-top-color: var(--status4); }
+
+  .rejected-toggle {
+    display: block; width: 100%; text-align: center; margin: 1rem 0 0; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+    padding: .55rem 1rem; font-size: .82rem; font-weight: 600; color: var(--ink-soft); font-family: inherit;
+  }
+  .rejected-toggle:hover { border-color: var(--bad); color: var(--bad); }
+  .rejected-wrap { margin-top: .8rem; opacity: .82; }
+
+  /* ---- Mobile: the wide table becomes a stack of cards, one per listing.
+     Desktop columns become "LABEL   value" rows via data-label + ::before;
+     photo/title/contact get their own full-width treatment; the four
+     icon-only actions (favori/harita/not/sil) share one row. ---- */
+  @media (max-width: 720px) {
+    .wrap { padding: .8rem .6rem 2rem; }
+    header.top h1 { font-size: 1.25rem; }
+
+    .view-toggle { flex-wrap: wrap; }
+    .view-btn { padding: .4rem .7rem; font-size: .78rem; }
+
+    .table-wrap { overflow-x: visible; border: none; border-radius: 0; }
+    .listings-table { font-size: .88rem; }
+    .listings-table thead { display: none; }
+    .listings-table, .listings-table tbody { display: block; width: 100%; }
+    .listings-table tbody tr:not(.notes-row) {
+      display: block; margin-bottom: .9rem; border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: var(--shadow);
+    }
+    .listings-table tbody tr.notes-row { display: none; }
+    .listings-table tbody tr.notes-row.open { display: block; margin: -.9rem 0 .9rem; }
+    .listings-table tbody tr.notes-row.open td { display: block; }
+
+    .listings-table td {
+      display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+      width: auto; padding: .55rem .8rem; text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+    .listings-table tbody tr:not(.notes-row) td:last-child { border-bottom: none; }
+    .listings-table td[data-label]::before {
+      content: attr(data-label); font-size: .7rem; font-weight: 700; color: var(--ink-faint);
+      text-transform: uppercase; letter-spacing: .03em; text-align: left; flex-shrink: 0;
+    }
+    .listings-table td .cell-input, .listings-table td .kira-cell { justify-content: flex-end; }
+    .listings-table td .kira-cell { display: flex; }
+
+    .listings-table td:first-child { padding: 0; border-bottom: none; }
+    .table-thumb { width: 100%; height: 170px; border-radius: 0; }
+
+    .listings-table td.title-cell { display: block; text-align: left; max-width: none; padding-bottom: .3rem; }
+    .listings-table .title-link, .listings-table .title-input { font-size: 1rem; }
+
+    .listings-table td.visit-cell-empty { display: none; }
+
+    .listings-table td.contact-cell { display: block; text-align: left; }
+    .listings-table .contact-buttons { margin-top: .3rem; }
+    .listings-table .wa-btn, .listings-table .call-btn { flex: 1; text-align: center; padding: .6rem; font-size: .85rem; }
+
+    /* favori(★) / harita(📍) / not(✎) / sil(🗑) sit together as one icon row */
+    .listings-table td:nth-child(11),
+    .listings-table td:nth-child(12),
+    .listings-table td:nth-child(13),
+    .listings-table td:nth-child(14) {
+      display: inline-flex; width: 25%; justify-content: center; border-bottom: none; padding: .6rem .2rem;
+    }
+    .listings-table .star-btn { font-size: 1.4rem; }
+    .listings-table .notes-toggle { font-size: 1.15rem; }
+    .listings-table .btn-danger.btn-small { font-size: 1.05rem; padding: .3rem; background: none; }
+
+    .rejected-wrap { margin-top: .5rem; }
+
+    .cal-wrap { padding: .7rem; }
+    .cal-title { font-size: .92rem; min-width: 120px; }
+    .cal-nav { width: 1.8rem; height: 1.8rem; font-size: 1rem; }
+    .cal-grid { gap: .2rem; }
+    .cal-cell { min-height: 58px; padding: .2rem; border-radius: 6px; }
+    .cal-daynum { font-size: .66rem; margin-bottom: .1rem; }
+    .cal-chip { font-size: .58rem; padding: .1rem .2rem; margin-bottom: .1rem; }
+    .cal-label { font-size: .6rem; }
+
+    #mapContainer { height: 65vh; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="narrow">
+  <header class="top">
+    <h1>Girne'de Ev Arama 🏡</h1>
+    <p>Tüm ilanları tek yerde topla, adım adım ilerle.</p>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <button class="btn-accent add-toggle" id="toggleAddBtn">+ Yeni İlan Ekle</button>
+
+  <div class="card" id="addCard" style="display:none; margin-top:.8rem;">
+    <label for="sourceInput">Sayfa kaynağını yapıştır</label>
+    <p class="hint">
+      Bilgisayarda ilana sağ tıkla → "Sayfa Kaynağını Görüntüle" (Ctrl+U),
+      tümünü seç (Ctrl+A), kopyala (Ctrl+C), buraya yapıştır (Ctrl+V) — bulduklarımla
+      ilanı hemen oluştururum, sonra tablodan istediğin alanı düzeltebilirsin.
+    </p>
+    <textarea id="sourceInput" placeholder="Sayfa kaynağını buraya yapıştır..." style="min-height:4.5rem;"></textarea>
+    <div class="fetch-msg" id="sourceMsg"></div>
+
+    <button type="button" class="manual-link" id="manualLink">veya boş bir ilan oluştur →</button>
+  </div>
+  </div>
+
+  <div class="view-toggle">
+    <button type="button" class="view-btn" id="viewListBtn" onclick="setView('list')">📋 Liste</button>
+    <button type="button" class="view-btn" id="viewCalendarBtn" onclick="setView('calendar')">📅 Takvim</button>
+    <button type="button" class="view-btn" id="viewMapBtn" onclick="setView('map')">🗺️ Harita</button>
+  </div>
+
+  <div id="listings"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ---- Supabase config -----------------------------------------------
+  // Fill these in after creating your Supabase project (see README.md).
+  // Use the "Publishable key" from Project Settings -> API Keys (Supabase's
+  // current recommended replacement for the older "anon" key — same
+  // purpose, safe to expose here, same RLS behavior).
+  var SUPABASE_URL = 'https://tkhbtroslwxaqdwarzyr.supabase.co';
+  var SUPABASE_PUBLISHABLE_KEY = 'sb_publishable__aRAjen4fJ48rpob7A-QTQ_QEMB0dBy';
+
+  var CONFIGURED = SUPABASE_URL.indexOf('YOUR_') !== 0 && SUPABASE_PUBLISHABLE_KEY.indexOf('YOUR_') !== 0;
+  var supabaseClient = CONFIGURED ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+
+  var DURUMLAR = [
+    'İletişime geçilecek',
+    'Yanıt bekleniyor',
+    'Ziyaret planlandı',
+    'Ziyaret edildi',
+    'Uygun değil'
+  ];
+
+  // ---- Data layer (Supabase) ------------------------------------------
+  function ensureConfigured() {
+    if (!CONFIGURED) {
+      throw new Error('Supabase henüz ayarlanmadı — index.html dosyasının başındaki SUPABASE_URL ve SUPABASE_PUBLISHABLE_KEY değerlerini doldur (bkz. README.md).');
+    }
+  }
+
+  var db = {
+    getListings: function () {
+      ensureConfigured();
+      return supabaseClient.from('ilanlar').select('*')
+        .order('eklenme', { ascending: false })
+        .then(function (res) {
+          if (res.error) throw res.error;
+          var data = res.data || [];
+          // Most-recently-added first, except "Uygun değil" listings sink
+          // to the bottom — Array#sort is stable, so this only ever moves
+          // those, everyone else keeps their add-order (now newest-first).
+          data.sort(function (a, b) {
+            var aBad = a.durum === 'Uygun değil' ? 1 : 0;
+            var bBad = b.durum === 'Uygun değil' ? 1 : 0;
+            return aBad - bBad;
+          });
+          return data;
+        });
+    },
+    addListing: function (fields) {
+      ensureConfigured();
+      var row = Object.assign({ durum: DURUMLAR[0], favori: false }, fields);
+      return supabaseClient.from('ilanlar').insert(row).select().single()
+        .then(function (res) {
+          if (res.error) throw res.error;
+          return res.data;
+        });
+    },
+    updateListing: function (id, fields) {
+      ensureConfigured();
+      var patch = Object.assign({}, fields, { guncelleme: new Date().toISOString() });
+      return supabaseClient.from('ilanlar').update(patch).eq('id', id).select().single()
+        .then(function (res) {
+          if (res.error) throw res.error;
+          return res.data;
+        });
+    },
+    deleteListing: function (id) {
+      ensureConfigured();
+      return supabaseClient.from('ilanlar').delete().eq('id', id)
+        .then(function (res) {
+          if (res.error) throw res.error;
+          return true;
+        });
+    }
+  };
+
+  // ---- App state --------------------------------------------------------
+  function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+  var STATE = { listings: [], view: 'list', calMonth: startOfMonth(new Date()), showRejected: false, mapFocusId: null };
+  var leafletMap = null;
+  var mapMarkers = {};
+
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+
+  // <input type="datetime-local"> needs "YYYY-MM-DDTHH:mm" in LOCAL time,
+  // not the ISO/UTC string Supabase stores — hence the manual formatting
+  // instead of .toISOString().
+  function toDatetimeLocalValue(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
+      'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  function formatTimeShort(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+
+  var MONTHS_SHORT_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+  function formatVisitDisplay(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.getDate() + ' ' + MONTHS_SHORT_TR[d.getMonth()] + ', ' + formatTimeShort(iso);
+  }
+
+  // The visible "Ziyaret Zamanı" control is a plain button (icon until a
+  // date is picked, then the formatted date/time) wired to a visually
+  // hidden real <input type="datetime-local"> — this avoids ever showing
+  // the input's native "mm/dd/yyyy, --:-- --" placeholder text.
+  function openVisitPicker(id) {
+    var input = document.getElementById('visit-' + id);
+    if (!input) return;
+    if (typeof input.showPicker === 'function') {
+      try { input.showPicker(); return; } catch (e) { /* fall through */ }
+    }
+    input.focus();
+  }
+
+  function truncate(s, n) {
+    s = String(s || '');
+    return s.length > n ? s.slice(0, n - 1) + '…' : s;
+  }
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function decodeEntities(text) {
+    return String(text || '')
+      .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      // Generic numeric entities (e.g. &#x2B; for "+") — HangiEv.com encodes
+      // the "+" in room counts like "4+1" this way throughout titles.
+      .replace(/&#x([0-9a-fA-F]+);/g, function (m, hex) { return String.fromCodePoint(parseInt(hex, 16)); })
+      .replace(/&#(\d+);/g, function (m, dec) { return String.fromCodePoint(parseInt(dec, 10)); });
+  }
+
+  function currencyFromText(raw) {
+    if (/£|STG/i.test(raw)) return '£';
+    if (/₺|TL/i.test(raw)) return '₺';
+    if (/\$/.test(raw)) return '$';
+    if (/€/.test(raw)) return '€';
+    return null;
+  }
+
+  function debounce(fn, wait) {
+    var t;
+    return function () {
+      clearTimeout(t);
+      var args = arguments;
+      t = setTimeout(function () { fn.apply(null, args); }, wait);
+    };
+  }
+
+  function digitsForWhatsApp(raw) {
+    var d = (raw || '').replace(/[^\d+]/g, '');
+    if (d.indexOf('+') === 0) d = d.slice(1);
+    if (d.indexOf('00') === 0) d = d.slice(2);
+    if (d.indexOf('0') === 0) d = '90' + d.slice(1);
+    if (d.length <= 10 && d.indexOf('90') !== 0) d = '90' + d;
+    return d;
+  }
+
+  /**
+   * Parses a pasted page-source blob entirely client-side (no server round
+   * trip needed). Works best with real HTML (desktop "View Page Source"),
+   * but falls back gracefully to plain-text regexes if given visible text.
+   */
+  function parsePageSource(text) {
+    var fields = {};
+    if (!text) return fields;
+
+    // Content/href values are matched with a backreference to whichever
+    // quote character opened them, so an apostrophe inside the actual
+    // title/text (very common in Turkish: "Girne'de", "Alsancak'ta") isn't
+    // mistaken for the closing delimiter.
+    var ogTitle = text.match(/<meta[^>]+property=["']og:title["'][^>]+content=(["'])((?:(?!\1)[\s\S])*)\1/i);
+    if (ogTitle) fields.baslik = decodeEntities(ogTitle[2]).trim();
+
+    var ogUrl = text.match(/<meta[^>]+property=["']og:url["'][^>]+content=(["'])((?:(?!\1)[\s\S])*)\1/i) ||
+                text.match(/<link[^>]+rel=["']canonical["'][^>]+href=(["'])((?:(?!\1)[\s\S])*)\1/i);
+    if (ogUrl) fields.baglanti = decodeEntities(ogUrl[2]);
+
+    var ogImage = text.match(/<meta[^>]+property=["']og:image["'][^>]+content=(["'])((?:(?!\1)[\s\S])*)\1/i);
+    if (ogImage) fields.foto_url = decodeEntities(ogImage[2]);
+
+    var ldMatches = text.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+    ldMatches.forEach(function (block) {
+      var jsonText = block.replace(/^[\s\S]*?>/, '').replace(/<\/script>\s*$/i, '');
+      try {
+        var data = JSON.parse(jsonText);
+        var items = Array.isArray(data) ? data : [data];
+        items.forEach(function (item) {
+          if (!item) return;
+          if (item.offers && item.offers.price && !fields.kira) fields.kira = String(item.offers.price);
+          if (item.offers && item.offers.priceCurrency && !fields.para_birimi_hint) fields.para_birimi_hint = item.offers.priceCurrency;
+          if (item.telephone && !fields.telefon) fields.telefon = item.telephone;
+          // 101evler.com nests the agency phone under seller instead of the top level.
+          if (item.seller && item.seller.telephone && !fields.telefon) fields.telefon = item.seller.telephone;
+          if (item.name && !fields.baslik) fields.baslik = item.name.trim();
+          if (item.url && !fields.baglanti) fields.baglanti = item.url;
+          if (item.image && !fields.foto_url) fields.foto_url = Array.isArray(item.image) ? item.image[0] : (item.image.url || item.image);
+          // 101evler.com's RealEstateListing schema puts the actual property's
+          // room/bathroom count, address, and coordinates under itemOffered
+          // rather than at the top level.
+          var offered = item.itemOffered;
+          if (offered) {
+            if (offered.numberOfRooms && !fields.oda) fields.oda = String(offered.numberOfRooms).replace(/\s/g, '');
+            if (offered.numberOfBathroomsTotal && !fields.banyo) fields.banyo = String(offered.numberOfBathroomsTotal);
+            if (offered.address && !fields.mahalle) {
+              var addr = offered.address;
+              var parts = [addr.streetAddress, addr.addressLocality].filter(Boolean);
+              if (parts.length) fields.mahalle = parts.join(', ');
+            }
+            // geo is null when the lister hasn't pinned an exact location —
+            // only trust it when both coordinates are actually present.
+            if (offered.geo && offered.geo.latitude && offered.geo.longitude) {
+              fields.lat = parseFloat(offered.geo.latitude);
+              fields.lng = parseFloat(offered.geo.longitude);
+            }
+          }
+        });
+      } catch (e) { /* not valid JSON, skip */ }
+    });
+
+    var priceMatch = text.match(/(£|\$|₺|STG|TL)\s?[\d.,]{3,}|[\d.,]{3,}\s?(£|\$|₺|STG|TL)/);
+    if (priceMatch && !fields.kira) fields.kira = priceMatch[0].trim();
+
+    // Room count ("4+1") is HTML-entity-encoded in the raw title/h1 text on
+    // this site, so match against the already-decoded title first (falls
+    // back to raw text for other sources/sites that don't do this).
+    var roomMatch = (fields.baslik || '').match(/\b([1-6]\s?\+\s?[0-2])\b/) || text.match(/\b([1-6]\s?\+\s?[0-2])\b/);
+    if (roomMatch && !fields.oda) fields.oda = roomMatch[1].replace(/\s/g, '');
+
+    var bathMatch = text.match(/(\d)\s*(banyo|bathroom)/i);
+    if (bathMatch && !fields.banyo) fields.banyo = bathMatch[1];
+
+    var leaseMatch = text.match(/Minimum Kira S(?:ü|&#252;|&uuml;)resi\s*<span>([^<]+)<\/span>/i) ||
+                      text.match(/En Az Kiralama<\/div>\s*<div class="col-7">\s*<strong>([^<]+)<\/strong>/i);
+    if (leaseMatch && !fields.kira_suresi) fields.kira_suresi = leaseMatch[1].trim();
+
+    var neighborhoodMatch = text.match(/<h2 class="lead mb-4">([^<]+)<\/h2>/i) ||
+                             text.match(/<div class="div-block-338">[\s\S]*?<div class="text-block-131">([^<]+)<\/div>/i);
+    if (neighborhoodMatch && !fields.mahalle) fields.mahalle = decodeEntities(neighborhoodMatch[1]).trim();
+
+    var mapMatch = text.match(/id="propertyMapNew"[^>]*data-lat="(-?[\d.]+)"[^>]*data-lng="(-?[\d.]+)"/i) ||
+                   text.match(/maps\/embed\/v1\/place\?[^"']*[?&]q=(-?[\d.]+),\s*(-?[\d.]+)/i);
+    // hangiev.com falls back to one identical generic "Girne merkez" pin
+    // (35.339286650, 33.321858300) whenever the agent hasn't set even an
+    // approximate location for the listing — its own `data-isexact="0"`
+    // flag doesn't distinguish this from a listing's real (if approximate)
+    // pin, so it can't be used as the guard. This one is unmistakable
+    // because it's identical to 9 decimal places across many unrelated
+    // buildings — no real geocode repeats like that — so treat it as "no
+    // location" rather than store a coordinate that's actively misleading
+    // (stacks unrelated listings on top of each other on the map).
+    var HANGIEV_FALLBACK_LAT = 35.33928665, HANGIEV_FALLBACK_LNG = 33.3218583;
+    if (mapMatch && fields.lat == null) {
+      var parsedLat = parseFloat(mapMatch[1]);
+      var parsedLng = parseFloat(mapMatch[2]);
+      var isFallback = Math.abs(parsedLat - HANGIEV_FALLBACK_LAT) < 1e-6 &&
+                        Math.abs(parsedLng - HANGIEV_FALLBACK_LNG) < 1e-6;
+      if (!isFallback) {
+        fields.lat = parsedLat;
+        fields.lng = parsedLng;
+      }
+    }
+
+    var phoneMatch = text.match(/(\+?90[\s.-]?5\d{2}[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2})|\b0?5\d{2}[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b/);
+    if (phoneMatch && !fields.telefon) fields.telefon = phoneMatch[0];
+
+    return fields;
+  }
+
+  /**
+   * Creates a listing immediately from whatever fields were found (or none,
+   * for the blank/manual path) — no intermediate review form. Everything
+   * is editable in-place in the table afterward, so there's nothing to
+   * confirm before saving.
+   */
+  function createEntry(fields) {
+    var msg = document.getElementById('sourceMsg');
+    msg.textContent = 'Kaydediliyor...'; msg.className = 'fetch-msg';
+    var kiraRaw = fields.kira || '';
+    // 101evler.com's JSON-LD price is a bare number with no currency symbol
+    // in it (unlike hangiev.com's raw-text price), so priceCurrency (e.g.
+    // "GBP") is the only signal available for those listings.
+    var currencyByCode = { GBP: '£', TRY: '₺', TL: '₺', EUR: '€', USD: '$' };
+    var data = {
+      baglanti: fields.baglanti || '',
+      baslik: fields.baslik || '',
+      foto_url: fields.foto_url || '',
+      kira: kiraRaw.replace(/[^\d.,]/g, ''),
+      para_birimi: (kiraRaw && currencyFromText(kiraRaw)) || currencyByCode[fields.para_birimi_hint] || '£',
+      oda: fields.oda || '',
+      banyo: fields.banyo || '',
+      kira_suresi: fields.kira_suresi || '',
+      telefon: fields.telefon || '',
+      mahalle: fields.mahalle || '',
+      notlar: ''
+    };
+    // lat/lng are numeric columns — only set them when the source actually
+    // had coordinates, so we don't send an empty string into a number field.
+    if (fields.lat != null && fields.lng != null) {
+      data.lat = fields.lat;
+      data.lng = fields.lng;
+    }
+    db.addListing(data)
+      .then(function () {
+        document.getElementById('sourceInput').value = '';
+        msg.textContent = '';
+        document.getElementById('addCard').style.display = 'none';
+        load();
+      })
+      .catch(function (err) {
+        msg.textContent = 'Kaydedilemedi: ' + (err && err.message ? err.message : err);
+        msg.className = 'fetch-msg warn';
+      });
+  }
+
+  document.getElementById('toggleAddBtn').addEventListener('click', function () {
+    var card = document.getElementById('addCard');
+    card.style.display = card.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('manualLink').addEventListener('click', function () {
+    createEntry({});
+  });
+
+  document.getElementById('sourceInput').addEventListener('input', debounce(function () {
+    var text = document.getElementById('sourceInput').value.trim();
+    if (!text) return;
+    createEntry(parsePageSource(text));
+  }, 600));
+
+  // ---- Inline editing ---------------------------------------------------
+  function saveField(id, field, value) {
+    var patch = {};
+    patch[field] = value;
+    db.updateListing(id, patch).catch(function (err) {
+      alert('Kaydedilemedi: ' + (err && err.message ? err.message : err));
+    });
+  }
+
+  function toggleFavorite(id, current) {
+    db.updateListing(id, { favori: !current }).then(load).catch(function (err) { alert('Güncellenemedi: ' + (err && err.message ? err.message : err)); });
+  }
+  function changeStatus(id, value) {
+    db.updateListing(id, { durum: value }).then(load).catch(function (err) { alert('Güncellenemedi: ' + (err && err.message ? err.message : err)); });
+  }
+  function removeListing(id) {
+    if (!confirm('Bu ilanı silmek istediğine emin misin?')) return;
+    db.deleteListing(id).then(load).catch(function (err) { alert('Silinemedi: ' + (err && err.message ? err.message : err)); });
+  }
+  function toggleNotes(rowId) {
+    document.getElementById(rowId).classList.toggle('open');
+  }
+
+  // Reloads (rather than the lighter-weight in-place update most saves use)
+  // because the calendar view reads straight from STATE.listings — if this
+  // stayed stale, switching to Takvim right after editing a date could show
+  // the old one.
+  function saveDateField(id, localValue) {
+    var iso = localValue ? new Date(localValue).toISOString() : null;
+    db.updateListing(id, { ziyaret_tarihi: iso }).then(load).catch(function (err) {
+      alert('Kaydedilemedi: ' + (err && err.message ? err.message : err));
+    });
+  }
+
+  // ---- View toggle (list / calendar) -------------------------------------
+  function setView(view) {
+    STATE.view = view;
+    render();
+  }
+
+  function shiftMonth(delta) {
+    STATE.calMonth = new Date(STATE.calMonth.getFullYear(), STATE.calMonth.getMonth() + delta, 1);
+    renderCalendarView();
+  }
+
+  // Used by calendar day chips: switch back to the list and scroll/flash
+  // the matching row, rather than just opening the listing's external URL,
+  // so a scheduled visit's full details (contact, notes, etc.) are one
+  // click away instead of two.
+  function jumpToListing(id) {
+    setView('list');
+    setTimeout(function () {
+      var row = document.getElementById('row-' + id);
+      if (!row) return;
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.classList.add('flash-row');
+      setTimeout(function () { row.classList.remove('flash-row'); }, 1600);
+    }, 30);
+  }
+
+  // Grows a title <textarea> to fit its wrapped content instead of
+  // scrolling internally — called on input, and once per row after render
+  // so pre-existing long titles start out fully expanded too.
+  function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+
+  function findListing(id) {
+    return (STATE.listings || []).find(function (l) { return l.id === id; });
+  }
+
+  function openWhatsApp(id) {
+    var l = findListing(id);
+    var tel = l && l.telefon && l.telefon.trim();
+    if (!tel) return;
+    var msg = 'Merhaba, ilanınız hâlâ müsait mi acaba?';
+    if (l.baglanti) msg += ' ' + l.baglanti;
+    window.open('https://wa.me/' + digitsForWhatsApp(tel) + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
+  }
+  function openCall(id) {
+    var l = findListing(id);
+    var tel = l && l.telefon && l.telefon.trim();
+    if (!tel) return;
+    window.location.href = 'tel:' + tel;
+  }
+
+  function render() {
+    // Every render fully rebuilds #listings, so any live Leaflet instance's
+    // container is about to be destroyed — tear it down first or Leaflet
+    // throws "Map container is already initialized" next time Harita opens.
+    if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+
+    var s = document.getElementById('summary');
+    var listings = STATE.listings || [];
+    var total = listings.length;
+    var favCount = listings.filter(function (l) { return l.favori; }).length;
+    var contacted = listings.filter(function (l) { return l.durum !== DURUMLAR[0]; }).length;
+    s.innerHTML =
+      '<span class="chip"><b>' + total + '</b> ilan eklendi</span>' +
+      '<span class="chip"><b>' + contacted + '</b> ilerlemede</span>' +
+      '<span class="chip"><b>' + favCount + '</b> favori</span>';
+
+    document.getElementById('viewListBtn').classList.toggle('active', STATE.view === 'list');
+    document.getElementById('viewCalendarBtn').classList.toggle('active', STATE.view === 'calendar');
+    document.getElementById('viewMapBtn').classList.toggle('active', STATE.view === 'map');
+
+    var container = document.getElementById('listings');
+    if (total === 0) {
+      container.innerHTML = '<div class="empty">Henüz ilan yok. İlk ilanı eklemek için yukarıdaki + butonuna bas.</div>';
+      return;
+    }
+
+    if (STATE.view === 'calendar') { renderCalendarView(); }
+    else if (STATE.view === 'map') { renderMapView(); }
+    else { renderListView(); }
+  }
+
+  var LISTINGS_TABLE_HEAD =
+    '<thead><tr>' +
+      '<th></th><th>İlan</th><th>Mahalle</th><th>Kira</th><th>Oda</th><th>Banyo</th><th>Süre</th>' +
+      '<th>Durum</th><th>Ziyaret Zamanı</th><th>İletişim</th><th></th><th></th><th>Not</th><th></th>' +
+    '</tr></thead>';
+
+  function buildListingRow(l) {
+    var noteId = 'notes-' + l.id;
+    var showVisit = l.durum === 'Ziyaret planlandı' || !!l.ziyaret_tarihi;
+    var visitCell = showVisit
+      ? '<span class="visit-wrap">' +
+          '<input type="datetime-local" class="visit-input-hidden" id="visit-' + l.id + '" value="' + toDatetimeLocalValue(l.ziyaret_tarihi) + '" onchange="saveDateField(\'' + l.id + '\', this.value)">' +
+          '<button type="button" class="visit-btn" onclick="openVisitPicker(\'' + l.id + '\')" title="Ziyaret zamanı seç">' +
+            (l.ziyaret_tarihi ? escapeHtml(formatVisitDisplay(l.ziyaret_tarihi)) : '📅') +
+          '</button>' +
+        '</span>'
+      : '';
+    return '<tr id="row-' + l.id + '">' +
+        '<td>' +
+          (l.foto_url ? '<img class="table-thumb" src="' + escapeHtml(l.foto_url) + '" onerror="this.remove()">' : '') +
+        '</td>' +
+        '<td class="title-cell">' +
+          (l.baglanti
+            ? '<a class="title-link" href="' + escapeHtml(l.baglanti) + '" target="_blank" rel="noopener">' + escapeHtml(l.baslik || '(başlıksız)') + '</a>'
+            : '<textarea class="cell-input title-input" rows="1" placeholder="Başlık" oninput="autoGrow(this)" onblur="saveField(\'' + l.id + '\',\'baslik\',this.value)">' + escapeHtml(l.baslik) + '</textarea>') +
+        '</td>' +
+        '<td class="mahalle-cell" data-label="Mahalle"><input class="cell-input" value="' + escapeHtml(l.mahalle) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'mahalle\',this.value)"></td>' +
+        '<td data-label="Kira">' +
+          '<div class="kira-cell">' +
+            '<select class="cell-input mini-select" onchange="saveField(\'' + l.id + '\',\'para_birimi\',this.value)">' +
+              ['£', '₺', '$', '€'].map(function (c) {
+                return '<option' + (c === l.para_birimi ? ' selected' : '') + '>' + c + '</option>';
+              }).join('') +
+            '</select>' +
+            '<input class="cell-input" value="' + escapeHtml(l.kira) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'kira\',this.value)">' +
+          '</div>' +
+        '</td>' +
+        '<td data-label="Oda"><input class="cell-input" value="' + escapeHtml(l.oda) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'oda\',this.value)"></td>' +
+        '<td data-label="Banyo"><input class="cell-input" value="' + escapeHtml(l.banyo) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'banyo\',this.value)"></td>' +
+        '<td data-label="Süre"><input class="cell-input" value="' + escapeHtml(l.kira_suresi) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'kira_suresi\',this.value)"></td>' +
+        '<td data-label="Durum">' +
+          '<select class="durum-select status-' + DURUMLAR.indexOf(l.durum) + '" onchange="changeStatus(\'' + l.id + '\', this.value)">' +
+            DURUMLAR.map(function (d) {
+              return '<option value="' + escapeHtml(d) + '"' + (d === l.durum ? ' selected' : '') + '>' + escapeHtml(d) + '</option>';
+            }).join('') +
+          '</select>' +
+        '</td>' +
+        '<td class="visit-cell' + (showVisit ? '' : ' visit-cell-empty') + '"' + (showVisit ? ' data-label="Ziyaret"' : '') + '>' + visitCell + '</td>' +
+        '<td class="contact-cell">' +
+          '<div class="contact-buttons">' +
+            '<button type="button" class="wa-btn" onclick="openWhatsApp(\'' + l.id + '\')">WhatsApp</button>' +
+            '<button type="button" class="call-btn" onclick="openCall(\'' + l.id + '\')">Ara</button>' +
+          '</div>' +
+        '</td>' +
+        '<td><button class="star-btn ' + (l.favori ? 'on' : 'off') + '" onclick="toggleFavorite(\'' + l.id + '\',' + !!l.favori + ')">' + (l.favori ? '★' : '☆') + '</button></td>' +
+        '<td>' + (showsOnMap(l)
+          ? '<button type="button" class="notes-toggle" onclick="openMapForListing(\'' + l.id + '\')" title="Haritada göster">📍</button>'
+          : '') + '</td>' +
+        '<td><button class="notes-toggle" onclick="toggleNotes(\'' + noteId + '\')" title="Not">' + (l.notlar ? '✎' : '+') + '</button></td>' +
+        '<td><button class="btn-danger btn-small" onclick="removeListing(\'' + l.id + '\')" title="Sil">🗑️</button></td>' +
+      '</tr>' +
+      '<tr class="notes-row' + (l.notlar ? ' open' : '') + '" id="' + noteId + '">' +
+        '<td colspan="14"><textarea placeholder="Not ekle..." onblur="saveField(\'' + l.id + '\',\'notlar\',this.value)">' + escapeHtml(l.notlar) + '</textarea></td>' +
+      '</tr>';
+  }
+
+  function toggleRejected() {
+    STATE.showRejected = !STATE.showRejected;
+    render();
+  }
+
+  function renderListView() {
+    var listings = STATE.listings || [];
+    var container = document.getElementById('listings');
+
+    var active = listings.filter(function (l) { return l.durum !== 'Uygun değil'; });
+    var rejected = listings.filter(function (l) { return l.durum === 'Uygun değil'; });
+
+    var html = active.length
+      ? '<div class="table-wrap"><table class="listings-table">' + LISTINGS_TABLE_HEAD +
+          '<tbody>' + active.map(buildListingRow).join('') + '</tbody></table></div>'
+      : '<div class="empty">Uygun ilan yok — hepsi "Uygun değil" olarak işaretlenmiş.</div>';
+
+    if (rejected.length) {
+      html += '<button type="button" class="rejected-toggle" onclick="toggleRejected()">' +
+        (STATE.showRejected ? '▾ Uygun değil olanları gizle' : '▸ Uygun değil (' + rejected.length + ') — göster') +
+      '</button>';
+      if (STATE.showRejected) {
+        html += '<div class="table-wrap rejected-wrap"><table class="listings-table">' + LISTINGS_TABLE_HEAD +
+          '<tbody>' + rejected.map(buildListingRow).join('') + '</tbody></table></div>';
+      }
+    }
+
+    container.innerHTML = html;
+    container.querySelectorAll('.title-input').forEach(autoGrow);
+  }
+
+  var WEEKDAY_LABELS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+  function renderCalendarView() {
+    var container = document.getElementById('listings');
+    // Always all listings, regardless of the "Uygun değil" hidden/rejected
+    // toggle on the list view — a scheduled visit shouldn't disappear from
+    // the calendar just because its listing is collapsed on the main list.
+    var listings = STATE.listings || [];
+    var monthStart = STATE.calMonth;
+    var year = monthStart.getFullYear();
+    var month = monthStart.getMonth();
+    var firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0..Sun=6
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    var byDate = {};
+    listings.forEach(function (l) {
+      if (!l.ziyaret_tarihi) return;
+      var d = new Date(l.ziyaret_tarihi);
+      if (isNaN(d.getTime())) return;
+      var key = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+      (byDate[key] = byDate[key] || []).push(l);
+    });
+    Object.keys(byDate).forEach(function (key) {
+      byDate[key].sort(function (a, b) { return new Date(a.ziyaret_tarihi) - new Date(b.ziyaret_tarihi); });
+    });
+
+    var today = new Date();
+    var todayKey = today.getFullYear() + '-' + pad2(today.getMonth() + 1) + '-' + pad2(today.getDate());
+
+    var cells = '';
+    for (var i = 0; i < firstWeekday; i++) cells += '<div class="cal-cell cal-empty"></div>';
+    for (var day = 1; day <= daysInMonth; day++) {
+      var key = year + '-' + pad2(month + 1) + '-' + pad2(day);
+      var dayListings = byDate[key] || [];
+      cells += '<div class="cal-cell' + (key === todayKey ? ' cal-today' : '') + '">' +
+        '<div class="cal-daynum">' + day + '</div>' +
+        dayListings.map(function (l) {
+          return '<div class="cal-chip status-' + DURUMLAR.indexOf(l.durum) + '" onclick="jumpToListing(\'' + l.id + '\')" title="' + escapeHtml(l.baslik || '') + ' — ' + escapeHtml(l.durum || '') + '">' +
+            '<span class="cal-chip-time">' + formatTimeShort(l.ziyaret_tarihi) + '</span> ' +
+            escapeHtml(truncate(l.baslik || '(başlıksız)', 20)) +
+          '</div>';
+        }).join('') +
+      '</div>';
+    }
+
+    var hasAnyVisits = Object.keys(byDate).length > 0;
+
+    container.innerHTML =
+      '<div class="cal-wrap">' +
+        '<div class="cal-header">' +
+          '<button type="button" class="cal-nav" onclick="shiftMonth(-1)">‹</button>' +
+          '<div class="cal-title">' + escapeHtml(monthStart.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })) + '</div>' +
+          '<button type="button" class="cal-nav" onclick="shiftMonth(1)">›</button>' +
+        '</div>' +
+        '<div class="cal-grid cal-grid-labels">' + WEEKDAY_LABELS.map(function (w) { return '<div class="cal-label">' + w + '</div>'; }).join('') + '</div>' +
+        '<div class="cal-grid">' + cells + '</div>' +
+        (hasAnyVisits ? '' : '<p class="cal-empty-note">Henüz ziyaret zamanı girilmiş bir ilan yok — listeden bir ilana "Ziyaret Zamanı" ekleyince burada görünür.</p>') +
+      '</div>';
+  }
+
+  // A round thumbnail of the listing's own cover photo, standing in for
+  // Leaflet's default teardrop marker — plain L.Icon.Default images don't
+  // survive being loaded off a CDN (see git history), and a photo is more
+  // useful at a glance than a generic pin anyway.
+  function thumbnailIcon(fotoUrl, statusIndex) {
+    var inner = fotoUrl
+      ? '<img src="' + escapeHtml(fotoUrl) + '" onerror="this.parentElement.classList.add(\'thumb-pin-broken\')">'
+      : '<span class="thumb-pin-fallback">🏠</span>';
+    var statusClass = 'pin-status-' + statusIndex;
+    return L.divIcon({
+      className: 'thumb-pin ' + statusClass,
+      html: '<div class="thumb-pin-circle ' + statusClass + '">' + inner + '</div><div class="thumb-pin-arrow"></div>',
+      iconSize: [46, 56],
+      iconAnchor: [23, 56],
+      popupAnchor: [0, -54]
+    });
+  }
+
+  var GIRNE_CENTER = [35.34, 33.32];
+
+  // Coordinates are coerced through Number() rather than a strict typeof
+  // check, since PostgREST can return numeric columns as strings.
+  function hasCoords(l) {
+    var lat = Number(l.lat), lng = Number(l.lng);
+    return l.lat != null && l.lng != null && isFinite(lat) && isFinite(lng);
+  }
+
+  // A listing plots on the map only while it's still in the running — once
+  // marked "Uygun değil" it drops off (unlike the calendar, which keeps
+  // showing its past/scheduled visit regardless of status).
+  function showsOnMap(l) {
+    return hasCoords(l) && l.durum !== 'Uygun değil';
+  }
+
+  function renderMapView() {
+    var container = document.getElementById('listings');
+    var listings = STATE.listings || [];
+    var withCoords = listings.filter(showsOnMap);
+    var focusId = STATE.mapFocusId;
+    STATE.mapFocusId = null;
+
+    container.innerHTML = '<div id="mapContainer"></div>' +
+      (withCoords.length ? '' : '<p class="map-empty-note">Henüz konumu bilinen bir ilan yok — sayfa kaynağından eklenen ilanlarda konum otomatik gelir.</p>');
+
+    if (typeof L === 'undefined') {
+      container.innerHTML = '<div class="empty">Harita kütüphanesi yüklenemedi — internet bağlantısını kontrol et.</div>';
+      return;
+    }
+
+    leafletMap = L.map('mapContainer');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(leafletMap);
+
+    mapMarkers = {};
+    if (withCoords.length) {
+      var markers = withCoords.map(function (l) {
+        var popupHtml = '<div class="map-popup">' +
+          (l.foto_url ? '<img src="' + escapeHtml(l.foto_url) + '" onerror="this.remove()">' : '') +
+          '<div class="map-popup-title">' + escapeHtml(truncate(l.baslik || '(başlıksız)', 60)) + '</div>' +
+          (l.mahalle ? '<div class="map-popup-mahalle">' + escapeHtml(l.mahalle) + '</div>' : '') +
+          '<button type="button" onclick="jumpToListing(\'' + l.id + '\')">Listede Aç</button>' +
+        '</div>';
+        var marker = L.marker([l.lat, l.lng], { icon: thumbnailIcon(l.foto_url, DURUMLAR.indexOf(l.durum)) }).bindPopup(popupHtml).addTo(leafletMap);
+        mapMarkers[l.id] = marker;
+        return marker;
+      });
+      leafletMap.fitBounds(L.featureGroup(markers).getBounds().pad(0.2));
+      if (focusId && mapMarkers[focusId]) {
+        leafletMap.setView(mapMarkers[focusId].getLatLng(), 16);
+        mapMarkers[focusId].openPopup();
+      }
+    } else {
+      leafletMap.setView(GIRNE_CENTER, 12);
+    }
+  }
+
+  // Jumps straight to the map, centered and popped-open on this one
+  // listing — the pin icon in each row is a shortcut for "where is this",
+  // versus the Harita toggle which shows everything at once.
+  function openMapForListing(id) {
+    var l = findListing(id);
+    if (!l || !showsOnMap(l)) return;
+    STATE.mapFocusId = id;
+    STATE.view = 'map';
+    render();
+  }
+
+  function showLoadError(err) {
+    document.getElementById('listings').innerHTML =
+      '<div class="empty">Yüklenemedi: ' + escapeHtml(err && err.message ? err.message : err) + '</div>';
+  }
+
+  function load() {
+    db.getListings()
+      .then(function (listings) {
+        STATE.listings = listings || [];
+        render();
+      })
+      .catch(showLoadError);
+  }
+
+  if (!CONFIGURED) {
+    document.getElementById('listings').innerHTML =
+      '<div class="setup-notice">Kurulum tamamlanmadı: <code>index.html</code> dosyasının başındaki ' +
+      '<code>SUPABASE_URL</code> ve <code>SUPABASE_PUBLISHABLE_KEY</code> değerlerini kendi Supabase ' +
+      'projenin bilgileriyle doldurman gerekiyor. Adımlar için <code>README.md</code> dosyasına bak.</div>';
+  } else {
+    load();
+  }
+</script>
+</body>
+</html>
