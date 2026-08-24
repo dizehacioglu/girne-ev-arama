@@ -184,16 +184,20 @@
 
   .listings-table td.visit-cell { text-align: center; }
   .visit-wrap { position: relative; display: inline-block; }
+  /* Sits directly on top of .visit-btn at full size so mobile browsers treat
+     the tap as a direct interaction with the native picker (calling
+     showPicker() from a proxy button's onclick is unreliable on mobile
+     Safari/Chrome for datetime-local — the picker can fail to open). */
   .visit-input-hidden {
-    position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;
-    border: 0; padding: 0; margin: -1px; overflow: hidden;
+    position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
+    opacity: 0; border: 0; padding: 0; margin: 0; cursor: pointer;
   }
   .visit-btn {
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
     padding: .4rem .65rem; font-size: .8rem; color: var(--ink); cursor: pointer;
-    font-family: inherit; white-space: nowrap;
+    font-family: inherit; white-space: nowrap; pointer-events: none;
   }
-  .visit-btn:hover { border-color: var(--accent); }
+  .visit-wrap:hover .visit-btn { border-color: var(--accent); }
 
   .cell-input {
     width: 100%; min-width: 60px; padding: .35rem .4rem; border-radius: 6px;
@@ -502,41 +506,47 @@
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
-  // <input type="datetime-local"> needs "YYYY-MM-DDTHH:mm" in LOCAL time,
-  // not the ISO/UTC string Supabase stores — hence the manual formatting
-  // instead of .toISOString().
-  function toDatetimeLocalValue(iso) {
-    if (!iso) return '';
+  // Visit times are always shown and entered in Girne/KKTC local time
+  // (UTC+3, fixed year-round — Northern Cyprus has followed Turkey's
+  // permanent UTC+3 since 2016, no DST), regardless of the timezone the
+  // viewing device happens to be set to. Everything is stored in Postgres
+  // as a UTC instant, so all reading/writing goes through a fixed +03:00
+  // offset instead of the browser's local timezone (Date#getHours() etc).
+  var GIRNE_UTC_OFFSET_MIN = 180;
+
+  // Returns the Girne wall-clock date/time for a stored UTC ISO string, as
+  // plain numbers — independent of the browser's own timezone.
+  function isoToGirneParts(iso) {
+    if (!iso) return null;
     var d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
-      'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    if (isNaN(d.getTime())) return null;
+    var girne = new Date(d.getTime() + GIRNE_UTC_OFFSET_MIN * 60000);
+    return {
+      y: girne.getUTCFullYear(), mo: girne.getUTCMonth(), da: girne.getUTCDate(),
+      h: girne.getUTCHours(), mi: girne.getUTCMinutes()
+    };
+  }
+
+  // <input type="datetime-local"> needs "YYYY-MM-DDTHH:mm" — we feed it
+  // Girne wall-clock time (see isoToGirneParts) rather than the browser's.
+  function toDatetimeLocalValue(iso) {
+    var p = isoToGirneParts(iso);
+    if (!p) return '';
+    return p.y + '-' + pad2(p.mo + 1) + '-' + pad2(p.da) +
+      'T' + pad2(p.h) + ':' + pad2(p.mi);
   }
 
   function formatTimeShort(iso) {
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+    var p = isoToGirneParts(iso);
+    if (!p) return '';
+    return pad2(p.h) + ':' + pad2(p.mi);
   }
 
   var MONTHS_SHORT_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
   function formatVisitDisplay(iso) {
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    return d.getDate() + ' ' + MONTHS_SHORT_TR[d.getMonth()] + ', ' + formatTimeShort(iso);
-  }
-
-  // The visible "Ziyaret Zamanı" control is a plain button (icon until a
-  // date is picked, then the formatted date/time) wired to a visually
-  // hidden real <input type="datetime-local"> — this avoids ever showing
-  // the input's native "mm/dd/yyyy, --:-- --" placeholder text.
-  function openVisitPicker(id) {
-    var input = document.getElementById('visit-' + id);
-    if (!input) return;
-    if (typeof input.showPicker === 'function') {
-      try { input.showPicker(); return; } catch (e) { /* fall through */ }
-    }
-    input.focus();
+    var p = isoToGirneParts(iso);
+    if (!p) return '';
+    return p.da + ' ' + MONTHS_SHORT_TR[p.mo] + ', ' + pad2(p.h) + ':' + pad2(p.mi);
   }
 
   function truncate(s, n) {
@@ -786,7 +796,18 @@
   // stayed stale, switching to Takvim right after editing a date could show
   // the old one.
   function saveDateField(id, localValue) {
-    var iso = localValue ? new Date(localValue).toISOString() : null;
+    // localValue ("YYYY-MM-DDTHH:mm") is always Girne/KKTC wall-clock time
+    // (matches what toDatetimeLocalValue fed the picker) — parsed manually
+    // and shifted by the fixed +03:00 offset rather than via `new Date()`,
+    // which would otherwise interpret it in the browser's own timezone.
+    var iso = null;
+    if (localValue) {
+      var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(localValue);
+      if (m) {
+        var utcMs = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - GIRNE_UTC_OFFSET_MIN * 60000;
+        iso = new Date(utcMs).toISOString();
+      }
+    }
     db.updateListing(id, { ziyaret_tarihi: iso }).then(load).catch(function (err) {
       alert('Kaydedilemedi: ' + (err && err.message ? err.message : err));
     });
@@ -887,10 +908,10 @@
     var showVisit = l.durum === 'Ziyaret planlandı' || !!l.ziyaret_tarihi;
     var visitCell = showVisit
       ? '<span class="visit-wrap">' +
-          '<input type="datetime-local" class="visit-input-hidden" id="visit-' + l.id + '" value="' + toDatetimeLocalValue(l.ziyaret_tarihi) + '" onchange="saveDateField(\'' + l.id + '\', this.value)">' +
-          '<button type="button" class="visit-btn" onclick="openVisitPicker(\'' + l.id + '\')" title="Ziyaret zamanı seç">' +
+          '<input type="datetime-local" class="visit-input-hidden" id="visit-' + l.id + '" value="' + toDatetimeLocalValue(l.ziyaret_tarihi) + '" title="Ziyaret zamanı seç (KKTC saati)" onchange="saveDateField(\'' + l.id + '\', this.value)">' +
+          '<span class="visit-btn">' +
             (l.ziyaret_tarihi ? escapeHtml(formatVisitDisplay(l.ziyaret_tarihi)) : '📅') +
-          '</button>' +
+          '</span>' +
         '</span>'
       : '';
     return '<tr id="row-' + l.id + '">' +
@@ -990,17 +1011,17 @@
     var byDate = {};
     listings.forEach(function (l) {
       if (!l.ziyaret_tarihi) return;
-      var d = new Date(l.ziyaret_tarihi);
-      if (isNaN(d.getTime())) return;
-      var key = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+      var p = isoToGirneParts(l.ziyaret_tarihi);
+      if (!p) return;
+      var key = p.y + '-' + pad2(p.mo + 1) + '-' + pad2(p.da);
       (byDate[key] = byDate[key] || []).push(l);
     });
     Object.keys(byDate).forEach(function (key) {
       byDate[key].sort(function (a, b) { return new Date(a.ziyaret_tarihi) - new Date(b.ziyaret_tarihi); });
     });
 
-    var today = new Date();
-    var todayKey = today.getFullYear() + '-' + pad2(today.getMonth() + 1) + '-' + pad2(today.getDate());
+    var todayP = isoToGirneParts(new Date().toISOString());
+    var todayKey = todayP.y + '-' + pad2(todayP.mo + 1) + '-' + pad2(todayP.da);
 
     var cells = '';
     for (var i = 0; i < firstWeekday; i++) cells += '<div class="cal-cell cal-empty"></div>';
