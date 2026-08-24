@@ -210,18 +210,31 @@
   .kira-cell .cell-input { min-width: 55px; }
   .contact-cell { min-width: 150px; }
 
-  tr.notes-row { display: none; }
-  tr.notes-row.open { display: table-row; }
-  tr.notes-row td { background: var(--surface-2); }
-
-  .notes-chip:empty { display: none; }
   .maps-chip {
     display: inline-flex; align-items: center; gap: .4rem; text-decoration: none;
     background: var(--surface); border: 1px solid var(--border); color: var(--ink);
-    font-size: .82rem; font-weight: 600; padding: .4rem .7rem; border-radius: 10px;
-    margin-bottom: .5rem;
+    font-size: .82rem; font-weight: 600; padding: .3rem .6rem; border-radius: 9px;
   }
   .maps-chip:hover { border-color: var(--accent); }
+
+  .notes-cell { max-width: 220px; min-width: 130px; }
+  .inline-preview {
+    display: block; width: 100%; min-width: 0; flex: 1 1 auto; cursor: text;
+    font-size: .85rem; color: var(--ink-soft); text-align: left;
+    padding: .3rem .4rem; border-radius: 7px; border: 1px solid transparent;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .inline-preview:hover, .inline-preview:focus-visible { border-color: var(--border); background: var(--surface-2); }
+  .inline-preview:focus-visible { outline: none; }
+  .inline-preview.empty { color: var(--ink-faint); }
+  .inline-preview.empty::before { content: "+ not ekle"; }
+  textarea.note-field {
+    width: 100%; padding: .45rem .55rem; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--ink); font-size: .85rem; font-family: inherit;
+    resize: vertical; min-height: 3rem;
+  }
+  textarea.note-field:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
 
   .empty { text-align: center; color: var(--ink-faint); padding: 1.5rem 1rem; font-size: .9rem; }
 
@@ -337,20 +350,17 @@
     .listings-table { font-size: .88rem; }
     .listings-table thead { display: none; }
     .listings-table, .listings-table tbody { display: block; width: 100%; }
-    .listings-table tbody tr:not(.notes-row) {
+    .listings-table tbody tr {
       display: block; margin-bottom: .9rem; border: 1px solid var(--border);
       border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: var(--shadow);
     }
-    .listings-table tbody tr.notes-row { display: none; }
-    .listings-table tbody tr.notes-row.open { display: block; margin: -.9rem 0 .9rem; }
-    .listings-table tbody tr.notes-row.open td { display: block; }
 
     .listings-table td {
       display: flex; justify-content: space-between; align-items: center; gap: .6rem;
       width: auto; padding: .55rem .8rem; text-align: right;
       border-bottom: 1px solid var(--border);
     }
-    .listings-table tbody tr:not(.notes-row) td:last-child { border-bottom: none; }
+    .listings-table tbody tr td:last-child { border-bottom: none; }
     .listings-table td[data-label]::before {
       content: attr(data-label); font-size: .7rem; font-weight: 700; color: var(--ink-faint);
       text-transform: uppercase; letter-spacing: .03em; text-align: left; flex-shrink: 0;
@@ -370,16 +380,17 @@
     .listings-table .contact-buttons { margin-top: .3rem; }
     .listings-table .wa-btn, .listings-table .call-btn { flex: 1; text-align: center; padding: .6rem; font-size: .85rem; }
 
-    /* favori(★) / harita(📍) / not(✎) / sil(🗑) sit together as one icon row */
+    /* Not is now a real content row (own line, like Mahalle/Kira), so only
+       favori(★) / harita(📍) / sil(🗑) share the icon row. */
     .listings-table td:nth-child(11),
     .listings-table td:nth-child(12),
-    .listings-table td:nth-child(13),
     .listings-table td:nth-child(14) {
-      display: inline-flex; width: 25%; justify-content: center; border-bottom: none; padding: .6rem .2rem;
+      display: inline-flex; width: 33.33%; justify-content: center; border-bottom: none; padding: .6rem .2rem;
     }
     .listings-table .star-btn { font-size: 1.4rem; }
     .listings-table .notes-toggle { font-size: 1.15rem; }
     .listings-table .btn-danger.btn-small { font-size: 1.05rem; padding: .3rem; background: none; }
+    .listings-table td.notes-cell { max-width: none; }
 
     .rejected-wrap { margin-top: .5rem; }
 
@@ -578,9 +589,30 @@
     if (!m) return '';
     return '<a class="maps-chip" href="' + escapeHtml(m[1]) + '" target="_blank" rel="noopener">🗺️ Haritada Aç</a>';
   }
-  function updateNotesChip(id, value) {
-    var host = document.getElementById('chip-' + id);
-    if (host) host.innerHTML = renderNotesChip(value);
+  // The "Not" column shows a compact always-visible preview (the maps chip,
+  // or a truncated line of text) so notes are scannable without opening
+  // anything; clicking it swaps that one cell into an editable textarea in
+  // place, matching how the other inline-editable columns already work.
+  function renderNotePreview(id, value) {
+    var chip = renderNotesChip(value);
+    var inner = chip || escapeHtml(value);
+    return '<span class="inline-preview' + (value ? '' : ' empty') + '" tabindex="0" onclick="editNoteCell(\'' + id + '\')" onkeydown="if(event.key===\'Enter\'){editNoteCell(\'' + id + '\')}">' + inner + '</span>';
+  }
+  function editNoteCell(id) {
+    var cell = document.getElementById('notes-td-' + id);
+    if (!cell) return;
+    var current = cell.dataset.notlar || '';
+    cell.innerHTML = '<textarea class="note-field" placeholder="Not ekle..." onblur="commitNoteCell(\'' + id + '\', this.value)">' + escapeHtml(current) + '</textarea>';
+    var ta = cell.querySelector('textarea');
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
+  function commitNoteCell(id, value) {
+    saveField(id, 'notlar', value);
+    var cell = document.getElementById('notes-td-' + id);
+    if (!cell) return;
+    cell.dataset.notlar = value;
+    cell.innerHTML = renderNotePreview(id, value);
   }
 
   function decodeEntities(text) {
@@ -810,10 +842,6 @@
     if (!confirm('Bu ilanı silmek istediğine emin misin?')) return;
     db.deleteListing(id).then(load).catch(function (err) { alert('Silinemedi: ' + (err && err.message ? err.message : err)); });
   }
-  function toggleNotes(rowId) {
-    document.getElementById(rowId).classList.toggle('open');
-  }
-
   // Reloads (rather than the lighter-weight in-place update most saves use)
   // because the calendar view reads straight from STATE.listings — if this
   // stayed stale, switching to Takvim right after editing a date could show
@@ -927,7 +955,6 @@
     '</tr></thead>';
 
   function buildListingRow(l) {
-    var noteId = 'notes-' + l.id;
     var showVisit = l.durum === 'Ziyaret planlandı' || !!l.ziyaret_tarihi;
     var visitCell = showVisit
       ? '<span class="visit-wrap">' +
@@ -978,14 +1005,8 @@
         '<td>' + (showsOnMap(l)
           ? '<button type="button" class="notes-toggle" onclick="openMapForListing(\'' + l.id + '\')" title="Haritada göster">📍</button>'
           : '') + '</td>' +
-        '<td><button class="notes-toggle" onclick="toggleNotes(\'' + noteId + '\')" title="Not">' + (l.notlar ? '✎' : '+') + '</button></td>' +
+        '<td class="notes-cell" data-label="Not" id="notes-td-' + l.id + '" data-notlar="' + escapeHtml(l.notlar) + '">' + renderNotePreview(l.id, l.notlar) + '</td>' +
         '<td><button class="btn-danger btn-small" onclick="removeListing(\'' + l.id + '\')" title="Sil">🗑️</button></td>' +
-      '</tr>' +
-      '<tr class="notes-row' + (l.notlar ? ' open' : '') + '" id="' + noteId + '">' +
-        '<td colspan="14">' +
-          '<div class="notes-chip" id="chip-' + l.id + '">' + renderNotesChip(l.notlar) + '</div>' +
-          '<textarea placeholder="Not ekle..." oninput="updateNotesChip(\'' + l.id + '\', this.value)" onblur="saveField(\'' + l.id + '\',\'notlar\',this.value)">' + escapeHtml(l.notlar) + '</textarea>' +
-        '</td>' +
       '</tr>';
   }
 
