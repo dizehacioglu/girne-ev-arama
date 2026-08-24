@@ -118,8 +118,6 @@
     padding: .6rem .9rem; cursor: pointer; font-weight: 600;
   }
   .btn-accent { background: var(--accent); color: var(--accent-ink); }
-  .btn-small { padding: .4rem .65rem; font-size: .8rem; }
-  .btn-danger { background: transparent; color: #b3493a; }
 
   .fetch-msg { font-size: .82rem; margin-top: .4rem; }
   .fetch-msg.ok { color: var(--good); }
@@ -135,10 +133,16 @@
   .wa-btn svg { width: 1.3rem; height: 1.3rem; fill: #fff; }
   .contact-buttons { display: flex; gap: .3rem; }
 
-  .notes-toggle {
-    font-size: .95rem; color: var(--ink-faint); background: none; border: none;
-    padding: .2rem .4rem; cursor: pointer; line-height: 1;
+  .pin-cell { text-align: center; }
+  .pin-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 2.2rem; height: 2.2rem; border-radius: 50%;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-soft);
+    cursor: pointer; box-shadow: var(--shadow);
+    transition: border-color .15s ease, color .15s ease, transform .12s ease;
   }
+  .pin-btn:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.07); }
+  .pin-btn svg { width: 1.05rem; height: 1.05rem; fill: currentColor; }
 
   #listings { margin-top: 1.3rem; }
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
@@ -238,17 +242,23 @@
   .maps-chip:hover { border-color: var(--accent); }
 
   .notes-cell { max-width: 220px; min-width: 130px; }
+  /* Same bordered-pill language as .maps-chip/.visit-btn elsewhere in the
+     table, so the Not column reads as one more chip rather than plain
+     text. A note that's just a link (.has-chip) skips its own box since
+     the chip inside already provides one — avoids a box-in-a-box. */
   .inline-preview {
-    display: block; width: 100%; min-width: 0; flex: 1 1 auto; cursor: text;
-    font-size: .85rem; color: var(--ink-soft); text-align: left;
-    padding: .3rem .4rem; border-radius: 7px; border: 1px solid transparent;
+    display: inline-flex; align-items: center; max-width: 100%; min-width: 0; flex: 1 1 auto;
+    cursor: text; font-size: .82rem; color: var(--ink-soft); text-align: left;
+    padding: .35rem .6rem; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface-2);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    transition: border-color .15s ease, background .15s ease;
+    transition: border-color .15s ease;
   }
-  .inline-preview:hover, .inline-preview:focus-visible { border-color: var(--border); background: var(--surface-2); }
+  .inline-preview:hover, .inline-preview:focus-visible { border-color: var(--accent); }
   .inline-preview:focus-visible { outline: none; }
-  .inline-preview.empty { color: var(--ink-faint); }
+  .inline-preview.empty { color: var(--ink-faint); background: transparent; border-style: dashed; }
   .inline-preview.empty::before { content: "+ not ekle"; }
+  .inline-preview.has-chip { border: none; background: none; padding: 0; }
   textarea.note-field {
     width: 100%; padding: .45rem .55rem; border-radius: 8px; border: 1px solid var(--border);
     background: var(--surface-2); color: var(--ink); font-size: .85rem; font-family: inherit;
@@ -401,14 +411,7 @@
     .listings-table .wa-btn { width: 2.7rem; height: 2.7rem; }
     .listings-table .wa-btn svg { width: 1.4rem; height: 1.4rem; }
 
-    /* Not (12th) is a real content row of its own (like Mahalle/Kira), so
-       only harita(📍, 11th) / sil(🗑, 13th) share the icon row. */
-    .listings-table td:nth-child(11),
-    .listings-table td:nth-child(13) {
-      display: inline-flex; width: 50%; justify-content: center; border-bottom: none; padding: .6rem .2rem;
-    }
-    .listings-table .notes-toggle { font-size: 1.15rem; }
-    .listings-table .btn-danger.btn-small { font-size: 1.05rem; padding: .3rem; background: none; }
+    .listings-table td.pin-cell-empty { display: none; }
     .listings-table td.notes-cell { max-width: none; }
 
     .rejected-wrap { margin-top: .5rem; }
@@ -526,14 +529,6 @@
           if (res.error) throw res.error;
           return res.data;
         });
-    },
-    deleteListing: function (id) {
-      ensureConfigured();
-      return supabaseClient.from('ilanlar').delete().eq('id', id)
-        .then(function (res) {
-          if (res.error) throw res.error;
-          return true;
-        });
     }
   };
 
@@ -606,16 +601,19 @@
   function renderNotesChip(notlar) {
     var m = NOTE_URL_RE.exec(notlar || '');
     if (!m) return '';
-    return '<a class="maps-chip" href="' + escapeHtml(m[1]) + '" target="_blank" rel="noopener">🗺️ Haritada Aç</a>';
+    return '<a class="maps-chip" href="' + escapeHtml(m[1]) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">🗺️ Haritada Aç</a>';
   }
   // The "Not" column shows a compact always-visible preview (the maps chip,
   // or a truncated line of text) so notes are scannable without opening
   // anything; clicking it swaps that one cell into an editable textarea in
   // place, matching how the other inline-editable columns already work.
+  // A note that's just a link skips the pill's own border (has-chip) since
+  // the chip inside already looks like one of the app's chips/buttons.
   function renderNotePreview(id, value) {
     var chip = renderNotesChip(value);
     var inner = chip || escapeHtml(value);
-    return '<span class="inline-preview' + (value ? '' : ' empty') + '" tabindex="0" onclick="editNoteCell(\'' + id + '\')" onkeydown="if(event.key===\'Enter\'){editNoteCell(\'' + id + '\')}">' + inner + '</span>';
+    var cls = 'inline-preview' + (value ? '' : ' empty') + (chip ? ' has-chip' : '');
+    return '<span class="' + cls + '" tabindex="0" onclick="editNoteCell(\'' + id + '\')" onkeydown="if(event.key===\'Enter\'){editNoteCell(\'' + id + '\')}">' + inner + '</span>';
   }
   function editNoteCell(id) {
     var cell = document.getElementById('notes-td-' + id);
@@ -854,10 +852,6 @@
   function changeStatus(id, value) {
     db.updateListing(id, { durum: value }).then(load).catch(function (err) { alert('Güncellenemedi: ' + (err && err.message ? err.message : err)); });
   }
-  function removeListing(id) {
-    if (!confirm('Bu ilanı silmek istediğine emin misin?')) return;
-    db.deleteListing(id).then(load).catch(function (err) { alert('Silinemedi: ' + (err && err.message ? err.message : err)); });
-  }
   // Reloads (rather than the lighter-weight in-place update most saves use)
   // because the calendar view reads straight from STATE.listings — if this
   // stayed stale, switching to Takvim right after editing a date could show
@@ -960,7 +954,7 @@
   var LISTINGS_TABLE_HEAD =
     '<thead><tr>' +
       '<th></th><th>İlan</th><th>Mahalle</th><th>Kira</th><th>Oda</th><th>Banyo</th><th>Süre</th>' +
-      '<th>Durum</th><th>Ziyaret Zamanı</th><th>İletişim</th><th></th><th>Not</th><th></th>' +
+      '<th>Durum</th><th>Ziyaret Zamanı</th><th>İletişim</th><th></th><th>Not</th>' +
     '</tr></thead>';
 
   function buildListingRow(l) {
@@ -1015,11 +1009,10 @@
             '</button>' +
           '</div>' +
         '</td>' +
-        '<td>' + (showsOnMap(l)
-          ? '<button type="button" class="notes-toggle" onclick="openMapForListing(\'' + l.id + '\')" title="Haritada göster">📍</button>'
+        '<td class="pin-cell' + (showsOnMap(l) ? '' : ' pin-cell-empty') + '"' + (showsOnMap(l) ? ' data-label="Harita"' : '') + '>' + (showsOnMap(l)
+          ? '<button type="button" class="pin-btn" onclick="openMapForListing(\'' + l.id + '\')" title="Haritada göster" aria-label="Haritada göster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.25 6.3 11.53 6.57 11.8a1.25 1.25 0 0 0 1.86 0c.27-.27 6.57-6.55 6.57-11.8C19.5 5.36 16.14 2 12 2zm0 10.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg></button>'
           : '') + '</td>' +
         '<td class="notes-cell" data-label="Not" id="notes-td-' + l.id + '" data-notlar="' + escapeHtml(l.notlar) + '">' + renderNotePreview(l.id, l.notlar) + '</td>' +
-        '<td><button class="btn-danger btn-small" onclick="removeListing(\'' + l.id + '\')" title="Sil">🗑️</button></td>' +
       '</tr>';
   }
 
