@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f4f2ee;
@@ -55,11 +55,11 @@
     --text-md: 1.05rem;
     --text-xl: 1.5rem;
     --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
-    /* Masthead "engraved plate" tones — a warmer, deeper bronze than the
-       page surface, so the panel reads as its own object (a directory
-       sign), not just another card. */
-    --plate-bg: #efe6d8;
-    --plate-border: #cbb99e;
+    /* Masthead tones — background/border match the table header row
+       exactly (same tokens) so the panel and the table read as one
+       family; ink stays a distinct warm bronze for the plate's text. */
+    --plate-bg: var(--surface-2);
+    --plate-border: var(--border);
     --plate-ink: #3a2c1c;
     --plate-soft: #6b5842;
   }
@@ -93,8 +93,8 @@
       --status3-soft: #223a29;
       --status4: #ea6b57;
       --status4-soft: #3d211c;
-      --plate-bg: #2c231a;
-      --plate-border: #4a3c2c;
+      --plate-bg: var(--surface-2);
+      --plate-border: var(--border);
       --plate-ink: #f1ede6;
       --plate-soft: #b8a888;
     }
@@ -124,8 +124,8 @@
   .masthead-title-block { padding: 1.5rem 1.6rem; border-right: 1px solid var(--plate-border); }
   .masthead-icon { width: 34px; height: 34px; margin-bottom: .55rem; display: block; }
   header.masthead h1 {
-    font-family: 'Big Shoulders Display', var(--font); font-weight: 800; text-transform: uppercase;
-    font-size: 2rem; line-height: .92; letter-spacing: .01em; color: var(--plate-ink); margin: 0 0 .5rem;
+    font-family: 'Cormorant Garamond', 'Times New Roman', serif; font-weight: 600; font-style: italic;
+    font-size: 2.5rem; line-height: 1.08; letter-spacing: .003em; color: var(--plate-ink); margin: 0 0 .5rem;
   }
   .masthead-dek { font-size: var(--text-base); color: var(--plate-soft); margin: 0; max-width: 34ch; line-height: 1.5; }
   .masthead-plate { padding: 1.5rem 1.6rem; display: flex; flex-direction: column; justify-content: center; gap: .9rem; }
@@ -171,6 +171,7 @@
      each had their own size, radius, and shadow. Every tool below is a
      .tool-chip first, then a modifier for icon-only vs text-bearing and a
      semantic color where one is warranted (WhatsApp green, map accent). */
+  .tools-cell { width: 20%; }
   .tools-row { display: flex; flex-wrap: nowrap; align-items: center; gap: .5rem; }
   .tool-chip {
     display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
@@ -229,7 +230,7 @@
     width: 132px; height: 132px; border-radius: 12px; object-fit: cover; display: block;
     background: var(--surface-2); border: 1px solid var(--border);
   }
-  .title-cell { min-width: 180px; max-width: 280px; }
+  .title-cell { width: 21%; min-width: 180px; max-width: 280px; }
   .title-input {
     font-size: var(--text-sm); font-weight: 600; font-family: inherit; resize: none; overflow: hidden;
     white-space: normal; word-break: break-word; line-height: 1.3; display: block; color: var(--ink);
@@ -266,7 +267,7 @@
   .durum-select.status-2 { background: var(--status2-soft); color: var(--status2); }
   .durum-select.status-3 { background: var(--status3-soft); color: var(--status3); }
   .durum-select.status-4 { background: var(--status4-soft); color: var(--status4); }
-  .mahalle-cell { min-width: 110px; max-width: 170px; vertical-align: middle; }
+  .mahalle-cell { width: 12%; min-width: 110px; max-width: 190px; vertical-align: middle; }
   .mahalle-input {
     font-family: inherit; resize: none; overflow: hidden;
     white-space: normal; word-break: break-word; line-height: 1.35; display: block;
@@ -304,17 +305,23 @@
     appearance: none; -webkit-appearance: none; -moz-appearance: none;
   }
   .mini-select:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-  /* Oda/Banyo/Süre only ever hold a couple characters ("2+1", "3", "12 ay")
-     — shrink-to-content instead of sharing the table's default column
-     sizing, freeing up room so Araçlar's chip row never has to wrap. */
-  .compact-cell { width: 1%; }
-  .compact-cell .cell-input { min-width: 42px; padding-left: .25rem; padding-right: .25rem; }
-  /* Photo/Kira/Durum have their own natural width from their content —
-     without this, table auto-layout hands them the space freed up above
-     instead of Araçlar (the column that actually wants it), leaving an
-     awkward gap between Kira and Oda. */
+  /* Every data column gets an explicit width hint instead of leaving table
+     auto-layout to guess — that guessing is what produced the unevenly
+     distributed, gappy columns this replaces. Oda/Banyo/Süre only ever
+     hold a couple characters ("2+1", "3", "12 ay") so they stay modest,
+     but no longer so tight they read as squashed. */
+  .compact-cell { width: 6%; }
+  .compact-cell .cell-input { min-width: 52px; padding-left: .25rem; padding-right: .25rem; }
+  /* The photo's own 132px thumbnail is its real width — shrink the
+     column to exactly that instead of giving it a proportional share. */
   .shrink-cell { width: 1%; }
-  .kira-cell { display: flex; gap: .3rem; align-items: center; }
+  .kira-td { width: 11%; }
+  .durum-td { width: 13%; }
+  /* inline-flex (not flex) so the row shrinks to its own content — as a
+     block-level flex row it stretched to fill the whole (now wider)
+     column, and the amount input's width:100% inside it stretched with
+     it, leaving a wide blank gap after the digits. */
+  .kira-cell { display: inline-flex; gap: .3rem; align-items: center; }
   .kira-cell .cell-input { min-width: 55px; }
 
   /* Transparent to layout — its child (the chip, or the textarea while
@@ -447,7 +454,7 @@
 
     .masthead-top, .masthead-bottom { grid-template-columns: 1fr; }
     .masthead-title-block, .masthead-cta-wrap { border-right: none; border-bottom: 1px solid var(--plate-border); }
-    header.masthead h1 { font-size: 1.7rem; }
+    header.masthead h1 { font-size: 2.1rem; }
     .masthead-nav { flex-wrap: wrap; gap: 1rem; }
 
     .table-wrap { overflow-x: visible; border: none; border-radius: 0; }
@@ -516,7 +523,7 @@
     <div class="masthead-top">
       <div class="masthead-title-block">
         <svg class="masthead-icon" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="52" r="46" fill="#f4f2ee"/><polygon points="50,26 80,52 68,52 68,80 32,80 32,52 20,52" fill="#a8603f"/><rect x="42" y="62" width="16" height="18" rx="2" fill="#f4f2ee"/><path d="M50 22 C48 17 41 18 41 24 C41 29 50 35 50 35 C50 35 59 29 59 24 C59 18 52 17 50 22 Z" fill="#d4a017"/></svg>
-        <h1>Girne'de<br>Ev Arama</h1>
+        <h1>Girne'de Ev Arama</h1>
         <p class="masthead-dek">Tüm ilanları tek yerde topla, adım adım ilerle.</p>
       </div>
       <div class="masthead-plate" id="summary"></div>
@@ -1095,7 +1102,7 @@
             : '<textarea class="cell-input title-input" rows="1" placeholder="Başlık" oninput="autoGrow(this)" onblur="saveField(\'' + l.id + '\',\'baslik\',this.value)">' + escapeHtml(l.baslik) + '</textarea>') +
         '</td>' +
         '<td class="mahalle-cell" data-label="Mahalle"><textarea class="cell-input mahalle-input" rows="1" placeholder="—" oninput="autoGrow(this)" onblur="saveField(\'' + l.id + '\',\'mahalle\',this.value)">' + escapeHtml(l.mahalle) + '</textarea></td>' +
-        '<td class="shrink-cell" data-label="Kira">' +
+        '<td class="kira-td" data-label="Kira">' +
           '<div class="kira-cell">' +
             '<span class="select-arrow-wrap mini-select-wrap">' +
               '<select class="cell-input mini-select" onchange="saveField(\'' + l.id + '\',\'para_birimi\',this.value)">' +
@@ -1110,7 +1117,7 @@
         '<td class="compact-cell" data-label="Oda"><input class="cell-input" value="' + escapeHtml(l.oda) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'oda\',this.value)"></td>' +
         '<td class="compact-cell" data-label="Banyo"><input class="cell-input" value="' + escapeHtml(l.banyo) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'banyo\',this.value)"></td>' +
         '<td class="compact-cell" data-label="Süre"><input class="cell-input" value="' + escapeHtml(l.kira_suresi) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'kira_suresi\',this.value)"></td>' +
-        '<td class="shrink-cell" data-label="Durum">' +
+        '<td class="durum-td" data-label="Durum">' +
           '<span class="select-arrow-wrap durum-select-wrap">' +
             '<select class="durum-select status-' + DURUMLAR.indexOf(l.durum) + '" onchange="changeStatus(\'' + l.id + '\', this.value)">' +
               DURUMLAR.map(function (d) {
