@@ -236,10 +236,11 @@
   .durum-select.status-2 { background: var(--status2-soft); color: var(--status2); }
   .durum-select.status-3 { background: var(--status3-soft); color: var(--status3); }
   .durum-select.status-4 { background: var(--status4-soft); color: var(--status4); }
-  .mahalle-cell { min-width: 110px; max-width: 170px; }
+  .mahalle-cell { min-width: 110px; max-width: 170px; vertical-align: middle; }
   .mahalle-input {
     font-family: inherit; resize: none; overflow: hidden;
     white-space: normal; word-break: break-word; line-height: 1.35; display: block;
+    margin: auto 0;
   }
   .muted-cell { color: var(--ink-faint); }
 
@@ -441,7 +442,8 @@
        Kira/Oda/Banyo on desktop — on a mobile card there's no neighboring
        column to protect, so it was just squeezing the value area and
        forcing "Ozanköy, Girne, Kıbrıs" to wrap across three lines. */
-    .listings-table td.mahalle-cell { max-width: none; }
+    .listings-table td.mahalle-cell { max-width: none; align-items: center; }
+    .listings-table td.mahalle-cell .mahalle-input { margin: 0; }
 
     /* Araçlar becomes its own full-width block (label above, chips below
        and wrapping) instead of the label-left/value-right row every other
@@ -642,7 +644,7 @@
   var PIN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.25 6.3 11.53 6.57 11.8a1.25 1.25 0 0 0 1.86 0c.27-.27 6.57-6.55 6.57-11.8C19.5 5.36 16.14 2 12 2zm0 10.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>';
   var CALENDAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1zM4 10v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10H4zm3 3h4v4H7v-4z"/></svg>';
   var CAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h12v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-8l-2.08-5.99zM6.5 16A1.5 1.5 0 1 1 6.5 13a1.5 1.5 0 0 1 0 3zm11 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 11l1.5-5h11L19 11H5z"/></svg>';
-  var PENCIL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+  var NOTE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10.17a2 2 0 0 0 1.42-.59l3.82-3.82A2 2 0 0 0 21 15.17V5a2 2 0 0 0-2-2H5zm2 4h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 4h10a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2zm0 4h6a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2z"/></svg>';
 
   // Notes are one free-text field that also doubles as a place to paste a
   // realtor's Google Maps link — pull the first URL out and show it as its
@@ -662,7 +664,7 @@
   // chip inside already looks like one of the app's tools.
   function renderNotePreview(id, value) {
     var chip = renderNotesChip(value);
-    var inner = chip || (PENCIL_SVG + escapeHtml(value));
+    var inner = chip || (NOTE_SVG + escapeHtml(value));
     var cls = 'tool-chip tool-note' + (value ? '' : ' tool-chip--icon tool-chip--empty') + (chip ? ' has-chip' : '');
     return '<span class="' + cls + '" tabindex="0" title="Not' + (value ? '' : ' ekle') + '" onclick="editNoteCell(\'' + id + '\')" onkeydown="if(event.key===\'Enter\'){editNoteCell(\'' + id + '\')}">' + inner + '</span>';
   }
