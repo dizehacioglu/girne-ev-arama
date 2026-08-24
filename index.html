@@ -908,7 +908,7 @@
     var showVisit = l.durum === 'Ziyaret planlandı' || !!l.ziyaret_tarihi;
     var visitCell = showVisit
       ? '<span class="visit-wrap">' +
-          '<input type="datetime-local" class="visit-input-hidden" id="visit-' + l.id + '" value="' + toDatetimeLocalValue(l.ziyaret_tarihi) + '" title="Ziyaret zamanı seç (KKTC saati)" onchange="saveDateField(\'' + l.id + '\', this.value)">' +
+          '<input type="datetime-local" class="visit-input-hidden" id="visit-' + l.id + '" value="' + toDatetimeLocalValue(l.ziyaret_tarihi) + '" title="Ziyaret zamanı seç (KKTC saati)" onclick="if(this.showPicker){try{this.showPicker()}catch(e){}}" onchange="saveDateField(\'' + l.id + '\', this.value)">' +
           '<span class="visit-btn">' +
             (l.ziyaret_tarihi ? escapeHtml(formatVisitDisplay(l.ziyaret_tarihi)) : '📅') +
           '</span>' +
