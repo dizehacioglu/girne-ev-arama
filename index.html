@@ -6,6 +6,9 @@
 <title>Girne'de Ev Arama</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUyIiByPSI0NiIgZmlsbD0iI2Y0ZjJlZSIvPjxwb2x5Z29uIHBvaW50cz0iNTAsMjYgODAsNTIgNjgsNTIgNjgsODAgMzIsODAgMzIsNTIgMjAsNTIiIGZpbGw9IiNhODYwM2YiLz48cmVjdCB4PSI0MiIgeT0iNjIiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxOCIgcng9IjIiIGZpbGw9IiNmNGYyZWUiLz48cGF0aCBkPSJNNTAgMjIgQzQ4IDE3IDQxIDE4IDQxIDI0IEM0MSAyOSA1MCAzNSA1MCAzNSBDNTAgMzUgNTkgMjkgNTkgMjQgQzU5IDE4IDUyIDE3IDUwIDIyIFoiIGZpbGw9IiNkNGEwMTciLz48L3N2Zz4=">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f4f2ee;
@@ -52,6 +55,13 @@
     --text-md: 1.05rem;
     --text-xl: 1.5rem;
     --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+    /* Masthead "engraved plate" tones — a warmer, deeper bronze than the
+       page surface, so the panel reads as its own object (a directory
+       sign), not just another card. */
+    --plate-bg: #efe6d8;
+    --plate-border: #cbb99e;
+    --plate-ink: #3a2c1c;
+    --plate-soft: #6b5842;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -83,6 +93,10 @@
       --status3-soft: #223a29;
       --status4: #ea6b57;
       --status4-soft: #3d211c;
+      --plate-bg: #2c231a;
+      --plate-border: #4a3c2c;
+      --plate-ink: #f1ede6;
+      --plate-soft: #b8a888;
     }
   }
   * { box-sizing: border-box; }
@@ -95,19 +109,35 @@
   }
   .wrap { max-width: 1600px; margin: 0 auto; padding: 1.1rem 1rem 2rem; }
   .narrow { max-width: 640px; margin: 0 auto; }
-  header.top { text-align: center; padding: 1.2rem 0 .6rem; }
-  header.top h1 { font-size: var(--text-xl); margin: 0 0 .3rem; letter-spacing: -.01em; }
-  header.top p { margin: 0; color: var(--ink-soft); font-size: var(--text-base); }
 
-  .summary {
-    display: flex; gap: .5rem; flex-wrap: wrap; justify-content: center;
-    margin: 1rem 0 1.4rem;
+  /* ---- Masthead: a building-directory panel, not a centered hero. A
+     real 2x2 grid (title | stat plate, over CTA | nav) divided by
+     hairlines — asymmetric and left-aligned instead of stacked/centered,
+     so it reads as one object you'd actually find at a building
+     entrance, not a marketing banner. ---- */
+  header.masthead {
+    background: var(--plate-bg); border: 1px solid var(--plate-border);
+    border-radius: var(--radius); overflow: hidden; margin: 1.1rem 0 1.4rem;
+    box-shadow: var(--shadow);
   }
-  .summary .chip {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 999px; padding: .35rem .8rem; font-size: var(--text-sm); color: var(--ink-soft);
+  .masthead-top { display: grid; grid-template-columns: 1.6fr 1fr; }
+  .masthead-title-block { padding: 1.5rem 1.6rem; border-right: 1px solid var(--plate-border); }
+  .masthead-icon { width: 34px; height: 34px; margin-bottom: .55rem; display: block; }
+  header.masthead h1 {
+    font-family: 'Big Shoulders Display', var(--font); font-weight: 800; text-transform: uppercase;
+    font-size: 2rem; line-height: .92; letter-spacing: .01em; color: var(--plate-ink); margin: 0 0 .5rem;
   }
-  .summary .chip b { color: var(--ink); }
+  .masthead-dek { font-size: var(--text-base); color: var(--plate-soft); margin: 0; max-width: 34ch; line-height: 1.5; }
+  .masthead-plate { padding: 1.5rem 1.6rem; display: flex; flex-direction: column; justify-content: center; gap: .9rem; }
+  .plate-stat { display: flex; align-items: baseline; gap: .6rem; }
+  .plate-num {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 600; font-size: 1.6rem;
+    color: var(--accent); font-variant-numeric: tabular-nums; min-width: 1.6ch;
+  }
+  .plate-lbl { font-size: var(--text-xs); color: var(--plate-soft); text-transform: uppercase; letter-spacing: .04em; }
+  .masthead-bottom { display: grid; grid-template-columns: 1.6fr 1fr; border-top: 1px solid var(--plate-border); }
+  .masthead-cta-wrap { padding: .9rem 1.6rem; border-right: 1px solid var(--plate-border); display: flex; align-items: center; }
+  .masthead-nav { padding: .9rem 1.6rem; display: flex; gap: 1.2rem; align-items: center; }
 
   .card {
     background: var(--surface); border: 1px solid var(--border);
@@ -300,8 +330,6 @@
 
   .empty { text-align: center; color: var(--ink-faint); padding: 1.5rem 1rem; font-size: var(--text-base); }
 
-  .add-toggle { display: block; width: 100%; text-align: center; }
-
   .hint { font-size: var(--text-sm); color: var(--ink-faint); margin: .1rem 0 .4rem; }
   .manual-link { display: block; text-align: center; font-size: var(--text-sm); color: var(--ink-faint); background: none; border: none; padding: .6rem 0 .2rem; cursor: pointer; width: 100%; }
   .manual-link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 6px; }
@@ -309,12 +337,20 @@
   .setup-notice { background: var(--warn-soft); color: var(--warn); border-radius: var(--radius); padding: 1rem; font-size: var(--text-base); line-height: 1.5; }
   .setup-notice code { background: rgba(0,0,0,.08); padding: .1rem .3rem; border-radius: 4px; }
 
-  .view-toggle { display: flex; gap: .4rem; justify-content: center; margin: .9rem 0 0; }
+  /* Underlined text tabs, not pills — lives inside the masthead's own
+     bottom-right quadrant now, not a separate centered toolbar. */
   .view-btn {
-    background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft);
-    border-radius: 999px; padding: .4rem .9rem; font-size: var(--text-sm); font-weight: 600; cursor: pointer;
+    font-family: var(--font); font-size: var(--text-base); font-weight: 600; color: var(--plate-soft);
+    background: none; border: none; padding: .2rem 0; cursor: pointer; position: relative;
   }
-  .view-btn.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .view-btn::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -.35rem; height: 2px; background: var(--accent);
+    transform: scaleX(0); transition: transform .15s ease;
+  }
+  .view-btn.active { color: var(--plate-ink); }
+  .view-btn.active::after { transform: scaleX(1); }
+  .view-btn:hover { color: var(--plate-ink); }
+  .view-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 4px; }
 
   .cal-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
   .cal-header { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: .9rem; }
@@ -408,10 +444,11 @@
      icon-only actions (harita/sil) share one row. ---- */
   @media (max-width: 720px) {
     .wrap { padding: .8rem .6rem 2rem; }
-    header.top h1 { font-size: 1.25rem; }
 
-    .view-toggle { flex-wrap: wrap; }
-    .view-btn { padding: .4rem .7rem; font-size: .78rem; }
+    .masthead-top, .masthead-bottom { grid-template-columns: 1fr; }
+    .masthead-title-block, .masthead-cta-wrap { border-right: none; border-bottom: 1px solid var(--plate-border); }
+    header.masthead h1 { font-size: 1.7rem; }
+    .masthead-nav { flex-wrap: wrap; gap: 1rem; }
 
     .table-wrap { overflow-x: visible; border: none; border-radius: 0; }
     .listings-table thead { display: none; }
@@ -475,34 +512,40 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="narrow">
-  <header class="top">
-    <h1>Girne'de Ev Arama 🏡</h1>
-    <p>Tüm ilanları tek yerde topla, adım adım ilerle.</p>
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-title-block">
+        <svg class="masthead-icon" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="52" r="46" fill="#f4f2ee"/><polygon points="50,26 80,52 68,52 68,80 32,80 32,52 20,52" fill="#a8603f"/><rect x="42" y="62" width="16" height="18" rx="2" fill="#f4f2ee"/><path d="M50 22 C48 17 41 18 41 24 C41 29 50 35 50 35 C50 35 59 29 59 24 C59 18 52 17 50 22 Z" fill="#d4a017"/></svg>
+        <h1>Girne'de<br>Ev Arama</h1>
+        <p class="masthead-dek">Tüm ilanları tek yerde topla, adım adım ilerle.</p>
+      </div>
+      <div class="masthead-plate" id="summary"></div>
+    </div>
+    <div class="masthead-bottom">
+      <div class="masthead-cta-wrap">
+        <button class="btn-accent" id="toggleAddBtn">+ Yeni İlan Ekle</button>
+      </div>
+      <nav class="masthead-nav">
+        <button type="button" class="view-btn" id="viewListBtn" onclick="setView('list')">Liste</button>
+        <button type="button" class="view-btn" id="viewCalendarBtn" onclick="setView('calendar')">Takvim</button>
+        <button type="button" class="view-btn" id="viewMapBtn" onclick="setView('map')">Harita</button>
+      </nav>
+    </div>
   </header>
 
-  <div class="summary" id="summary"></div>
+  <div class="narrow">
+    <div class="card" id="addCard" style="display:none; margin-bottom:1rem;">
+      <label for="sourceInput">Sayfa kaynağını yapıştır</label>
+      <p class="hint">
+        Bilgisayarda ilana sağ tıkla → "Sayfa Kaynağını Görüntüle" (Ctrl+U),
+        tümünü seç (Ctrl+A), kopyala (Ctrl+C), buraya yapıştır (Ctrl+V) — bulduklarımla
+        ilanı hemen oluştururum, sonra tablodan istediğin alanı düzeltebilirsin.
+      </p>
+      <textarea id="sourceInput" placeholder="Sayfa kaynağını buraya yapıştır..." style="min-height:4.5rem;"></textarea>
+      <div class="fetch-msg" id="sourceMsg"></div>
 
-  <button class="btn-accent add-toggle" id="toggleAddBtn">+ Yeni İlan Ekle</button>
-
-  <div class="card" id="addCard" style="display:none; margin-top:.8rem;">
-    <label for="sourceInput">Sayfa kaynağını yapıştır</label>
-    <p class="hint">
-      Bilgisayarda ilana sağ tıkla → "Sayfa Kaynağını Görüntüle" (Ctrl+U),
-      tümünü seç (Ctrl+A), kopyala (Ctrl+C), buraya yapıştır (Ctrl+V) — bulduklarımla
-      ilanı hemen oluştururum, sonra tablodan istediğin alanı düzeltebilirsin.
-    </p>
-    <textarea id="sourceInput" placeholder="Sayfa kaynağını buraya yapıştır..." style="min-height:4.5rem;"></textarea>
-    <div class="fetch-msg" id="sourceMsg"></div>
-
-    <button type="button" class="manual-link" id="manualLink">veya boş bir ilan oluştur →</button>
-  </div>
-  </div>
-
-  <div class="view-toggle">
-    <button type="button" class="view-btn" id="viewListBtn" onclick="setView('list')">📋 Liste</button>
-    <button type="button" class="view-btn" id="viewCalendarBtn" onclick="setView('calendar')">📅 Takvim</button>
-    <button type="button" class="view-btn" id="viewMapBtn" onclick="setView('map')">🗺️ Harita</button>
+      <button type="button" class="manual-link" id="manualLink">veya boş bir ilan oluştur →</button>
+    </div>
   </div>
 
   <div id="listings"></div>
@@ -988,8 +1031,8 @@
     var total = listings.length;
     var contacted = listings.filter(function (l) { return l.durum !== DURUMLAR[0]; }).length;
     s.innerHTML =
-      '<span class="chip"><b>' + total + '</b> ilan eklendi</span>' +
-      '<span class="chip"><b>' + contacted + '</b> ilerlemede</span>';
+      '<div class="plate-stat"><span class="plate-num">' + total + '</span><span class="plate-lbl">İlan eklendi</span></div>' +
+      '<div class="plate-stat"><span class="plate-num">' + contacted + '</span><span class="plate-lbl">İlerlemede</span></div>';
 
     document.getElementById('viewListBtn').classList.toggle('active', STATE.view === 'list');
     document.getElementById('viewCalendarBtn').classList.toggle('active', STATE.view === 'calendar');
