@@ -135,29 +135,40 @@
   .fetch-msg.ok { color: var(--good); }
   .fetch-msg.warn { color: var(--warn); }
 
-  .wa-btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    border: none; width: 2.4rem; height: 2.4rem; border-radius: 50%;
-    background: var(--whatsapp); cursor: pointer; padding: 0;
-    box-shadow: var(--shadow); transition: transform .12s ease;
+  /* ---- Araçlar: one shared chip language for every quick action in a row
+     (visit time, WhatsApp, map, note) instead of four separately-invented
+     widgets (a pill, two different circles, and a bordered text box) that
+     each had their own size, radius, and shadow. Every tool below is a
+     .tool-chip first, then a modifier for icon-only vs text-bearing and a
+     semantic color where one is warranted (WhatsApp green, map accent). */
+  .tools-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .tool-chip {
+    display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
+    height: 2.5rem; padding: 0 .8rem; border-radius: 999px; box-sizing: border-box;
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft);
+    font-size: var(--text-sm); font-weight: 600; font-family: inherit;
+    text-decoration: none; cursor: pointer; white-space: nowrap; line-height: 1;
+    transition: border-color .15s ease, background-color .15s ease, color .15s ease, transform .12s ease;
   }
-  .wa-btn:hover { transform: scale(1.07); }
-  .wa-btn svg { width: 1.3rem; height: 1.3rem; fill: #fff; }
-  .contact-buttons { display: flex; gap: .3rem; }
+  .tool-chip:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+  .tool-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .tool-chip svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; fill: currentColor; }
+  .tool-chip--icon { width: 2.5rem; padding: 0; }
 
-  .pin-cell { text-align: center; }
-  /* ink-soft-on-surface-2 read as a near-invisible smudge at this size —
-     accent-soft/accent gives it the same real contrast as every other
-     chip/pill in the table instead of fading into the background. */
-  .pin-btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 2.2rem; height: 2.2rem; border-radius: 50%;
-    background: var(--accent-soft); border: 1px solid var(--border); color: var(--accent);
-    cursor: pointer; box-shadow: var(--shadow);
-    transition: border-color .15s ease, background-color .15s ease, transform .12s ease;
-  }
-  .pin-btn:hover { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); transform: scale(1.07); }
-  .pin-btn svg { width: 1.1rem; height: 1.1rem; fill: currentColor; }
+  .tool-chip--empty { background: transparent; border-style: dashed; color: var(--ink-faint); cursor: text; }
+  .tool-chip--empty:hover { color: var(--accent); border-style: dashed; }
+
+  .tool-whatsapp { background: var(--whatsapp); border-color: var(--whatsapp); color: #fff; }
+  .tool-whatsapp:hover { border-color: var(--whatsapp); color: #fff; filter: brightness(1.08); transform: translateY(-1px); }
+
+  .tool-pin { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent); }
+  .tool-pin:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+  .tool-note { max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+  /* A note that's just a link renders its own .tool-pin chip inside —
+     this wrapper goes invisible so it doesn't box-in-a-box. */
+  .tool-note.has-chip { border: none; background: none; padding: 0; height: auto; }
+  .tool-note.has-chip:hover { transform: none; }
 
   #listings { margin-top: 1.3rem; }
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
@@ -181,15 +192,12 @@
     background: var(--surface-2); border: 1px solid var(--border);
   }
   .title-cell { min-width: 180px; max-width: 280px; }
-  /* The two numbers a house-hunter actually decides on — title and price —
-     get the one step up in the scale; everything else in the row (mahalle,
-     oda/banyo/süre) sits at --text-sm so they read as supporting detail. */
   .title-input {
-    font-size: var(--text-md); font-weight: 700; font-family: inherit; resize: none; overflow: hidden;
+    font-size: var(--text-sm); font-weight: 600; font-family: inherit; resize: none; overflow: hidden;
     white-space: normal; word-break: break-word; line-height: 1.3; display: block; color: var(--ink);
   }
   .title-link {
-    font-size: var(--text-md); font-weight: 700; color: var(--accent); text-decoration: none;
+    font-size: var(--text-sm); font-weight: 600; color: var(--accent); text-decoration: none;
     display: inline-block; line-height: 1.3;
   }
   .title-link:hover { text-decoration: underline; }
@@ -227,24 +235,20 @@
   }
   .muted-cell { color: var(--ink-faint); }
 
-  .listings-table td.visit-cell { text-align: center; }
   .visit-wrap { position: relative; display: inline-block; isolation: isolate; }
-  /* Sits directly on top of .visit-btn at full size so mobile browsers treat
-     the tap as a direct interaction with the native picker (calling
-     showPicker() from a proxy button's onclick is unreliable on mobile
-     Safari/Chrome for datetime-local — the picker can fail to open). */
+  /* Sits directly on top of the visible .tool-chip at full size so mobile
+     browsers treat the tap as a direct interaction with the native picker
+     (calling showPicker() from a proxy button's onclick is unreliable on
+     mobile Safari/Chrome for datetime-local — the picker can fail to open).
+     Because the real input is on top, the chip below never gets its own
+     :hover/:focus-visible — these two rules stand in for it. */
   .visit-input-hidden {
     position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;
     opacity: 0; border: 0; padding: 0; margin: 0; cursor: pointer;
   }
-  .visit-btn {
-    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
-    padding: .4rem .65rem; font-size: var(--text-sm); color: var(--ink); cursor: pointer;
-    font-family: inherit; white-space: nowrap; pointer-events: none;
-    font-variant-numeric: tabular-nums;
-  }
-  .visit-wrap:hover .visit-btn { border-color: var(--accent); }
-  .visit-input-hidden:focus-visible ~ .visit-btn { box-shadow: var(--focus-ring); }
+  .visit-wrap .tool-chip { font-variant-numeric: tabular-nums; pointer-events: none; }
+  .visit-wrap:hover .tool-chip { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+  .visit-input-hidden:focus-visible ~ .tool-chip { box-shadow: var(--focus-ring); }
 
   /* Oda/Banyo/Süre/Mahalle are supporting detail, not decision drivers —
      one step down from the row's base size and muted, so they don't
@@ -256,9 +260,6 @@
   }
   .cell-input:hover { border-color: var(--border); background: var(--surface-2); }
   .cell-input:focus { outline: none; border-color: var(--border); background: var(--surface-2); box-shadow: var(--focus-ring); }
-  /* The one number every decision comes down to — bumped back up to the
-     row's emphasis size, bold, full-ink, so it outranks its neighbors. */
-  .cell-input.kira-amount { font-size: var(--text-md); font-weight: 700; color: var(--ink); }
   .mini-select {
     width: auto; min-width: 54px; padding: .35rem 1.05rem .35rem .2rem;
     appearance: none; -webkit-appearance: none; -moz-appearance: none;
@@ -266,38 +267,16 @@
   .mini-select:focus-visible { outline: none; box-shadow: var(--focus-ring); }
   .kira-cell { display: flex; gap: .3rem; align-items: center; }
   .kira-cell .cell-input { min-width: 55px; }
-  .contact-cell { width: 1%; }
 
-  .maps-chip {
-    display: inline-flex; align-items: center; gap: .4rem; text-decoration: none;
-    background: var(--surface); border: 1px solid var(--border); color: var(--ink);
-    font-size: var(--text-sm); font-weight: 600; padding: .3rem .6rem; border-radius: 9px;
-  }
-  .maps-chip:hover { border-color: var(--accent); }
-  .maps-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .tool-chip--empty::before { content: "+ not ekle"; }
+  /* Transparent to layout — its child (the chip, or the textarea while
+     editing) participates directly in .tools-row's flex/wrap. */
+  .tool-note-wrap { display: contents; }
 
-  .notes-cell { max-width: 220px; min-width: 130px; }
-  /* Same bordered-pill language as .maps-chip/.visit-btn elsewhere in the
-     table, so the Not column reads as one more chip rather than plain
-     text. A note that's just a link (.has-chip) skips its own box since
-     the chip inside already provides one — avoids a box-in-a-box. */
-  .inline-preview {
-    display: inline-flex; align-items: center; max-width: 100%; min-width: 0; flex: 1 1 auto;
-    cursor: text; font-size: var(--text-sm); color: var(--ink-soft); text-align: left;
-    padding: .35rem .6rem; border-radius: 9px;
-    border: 1px solid var(--border); background: var(--surface-2);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    transition: border-color .15s ease;
-  }
-  .inline-preview:hover { border-color: var(--accent); }
-  .inline-preview:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-  .inline-preview.empty { color: var(--ink-faint); background: transparent; border-style: dashed; }
-  .inline-preview.empty::before { content: "+ not ekle"; }
-  .inline-preview.has-chip { border: none; background: none; padding: 0; }
   textarea.note-field {
-    width: 100%; padding: .45rem .55rem; border-radius: 8px; border: 1px solid var(--border);
+    flex: 1 1 220px; padding: .45rem .55rem; border-radius: 8px; border: 1px solid var(--border);
     background: var(--surface-2); color: var(--ink); font-size: var(--text-base); font-family: inherit;
-    resize: vertical; min-height: 3rem;
+    resize: vertical; min-height: 2.5rem;
   }
   textarea.note-field:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
 
@@ -442,15 +421,14 @@
 
     .listings-table td.title-cell { display: block; text-align: left; max-width: none; padding-bottom: .3rem; }
 
-    .listings-table td.visit-cell-empty { display: none; }
-
-    .listings-table td.contact-cell { display: block; text-align: left; }
-    .listings-table .contact-buttons { margin-top: .3rem; }
-    .listings-table .wa-btn { width: 2.7rem; height: 2.7rem; }
-    .listings-table .wa-btn svg { width: 1.4rem; height: 1.4rem; }
-
-    .listings-table td.pin-cell-empty { display: none; }
-    .listings-table td.notes-cell { max-width: none; }
+    /* Araçlar becomes its own full-width block (label above, chips below
+       and wrapping) instead of the label-left/value-right row every other
+       field uses — a wrapping row of chips can't sit next to a label. */
+    .listings-table td.tools-cell { display: block; text-align: left; }
+    .listings-table td.tools-cell::before { display: block; margin-bottom: .5rem; }
+    .listings-table .tool-chip, .listings-table .tool-chip--icon { height: 2.7rem; }
+    .listings-table .tool-chip--icon { width: 2.7rem; }
+    .listings-table .tool-chip svg { width: 1.35rem; height: 1.35rem; }
 
     .rejected-wrap { margin-top: .5rem; }
 
@@ -632,6 +610,12 @@
     });
   }
 
+  // Shared glyphs for the Araçlar chip row (see .tool-chip) — one small
+  // icon vocabulary reused everywhere a tool needs one, instead of mixing
+  // emoji with SVG.
+  var PIN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.25 6.3 11.53 6.57 11.8a1.25 1.25 0 0 0 1.86 0c.27-.27 6.57-6.55 6.57-11.8C19.5 5.36 16.14 2 12 2zm0 10.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>';
+  var CALENDAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1zM4 10v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V10H4zm3 3h4v4H7v-4z"/></svg>';
+
   // Notes are one free-text field that also doubles as a place to paste a
   // realtor's Google Maps link — pull the first URL out and show it as its
   // own tappable chip instead of leaving it buried in the text.
@@ -639,35 +623,37 @@
   function renderNotesChip(notlar) {
     var m = NOTE_URL_RE.exec(notlar || '');
     if (!m) return '';
-    return '<a class="maps-chip" href="' + escapeHtml(m[1]) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">🗺️ Haritada Aç</a>';
+    return '<a class="tool-chip tool-pin" href="' + escapeHtml(m[1]) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Haritada Aç">' + PIN_SVG + 'Haritada Aç</a>';
   }
-  // The "Not" column shows a compact always-visible preview (the maps chip,
-  // or a truncated line of text) so notes are scannable without opening
-  // anything; clicking it swaps that one cell into an editable textarea in
-  // place, matching how the other inline-editable columns already work.
-  // A note that's just a link skips the pill's own border (has-chip) since
-  // the chip inside already looks like one of the app's chips/buttons.
+  // The Not chip shows a compact always-visible preview (the maps chip, or
+  // a truncated line of text) so notes are scannable without opening
+  // anything; clicking it swaps into an editable textarea in place,
+  // matching how the other inline-editable columns already work. A note
+  // that's just a link skips the chip's own border (has-chip) since the
+  // chip inside already looks like one of the app's tools.
   function renderNotePreview(id, value) {
     var chip = renderNotesChip(value);
     var inner = chip || escapeHtml(value);
-    var cls = 'inline-preview' + (value ? '' : ' empty') + (chip ? ' has-chip' : '');
+    var cls = 'tool-chip tool-note' + (value ? '' : ' tool-chip--empty') + (chip ? ' has-chip' : '');
     return '<span class="' + cls + '" tabindex="0" onclick="editNoteCell(\'' + id + '\')" onkeydown="if(event.key===\'Enter\'){editNoteCell(\'' + id + '\')}">' + inner + '</span>';
   }
+  // The wrapper (not the chip itself) carries the id/data — it stays put
+  // in the tools row across preview <-> edit swaps.
   function editNoteCell(id) {
-    var cell = document.getElementById('notes-td-' + id);
-    if (!cell) return;
-    var current = cell.dataset.notlar || '';
-    cell.innerHTML = '<textarea class="note-field" placeholder="Not ekle..." onblur="commitNoteCell(\'' + id + '\', this.value)">' + escapeHtml(current) + '</textarea>';
-    var ta = cell.querySelector('textarea');
+    var wrap = document.getElementById('notes-td-' + id);
+    if (!wrap) return;
+    var current = wrap.dataset.notlar || '';
+    wrap.innerHTML = '<textarea class="note-field" placeholder="Not ekle..." onblur="commitNoteCell(\'' + id + '\', this.value)">' + escapeHtml(current) + '</textarea>';
+    var ta = wrap.querySelector('textarea');
     ta.focus();
     ta.setSelectionRange(ta.value.length, ta.value.length);
   }
   function commitNoteCell(id, value) {
     saveField(id, 'notlar', value);
-    var cell = document.getElementById('notes-td-' + id);
-    if (!cell) return;
-    cell.dataset.notlar = value;
-    cell.innerHTML = renderNotePreview(id, value);
+    var wrap = document.getElementById('notes-td-' + id);
+    if (!wrap) return;
+    wrap.dataset.notlar = value;
+    wrap.innerHTML = renderNotePreview(id, value);
   }
 
   function decodeEntities(text) {
@@ -992,19 +978,39 @@
   var LISTINGS_TABLE_HEAD =
     '<thead><tr>' +
       '<th></th><th>İlan</th><th>Mahalle</th><th>Kira</th><th>Oda</th><th>Banyo</th><th>Süre</th>' +
-      '<th>Durum</th><th>Ziyaret Zamanı</th><th>İletişim</th><th></th><th>Not</th>' +
+      '<th>Durum</th><th>Araçlar</th>' +
     '</tr></thead>';
 
-  function buildListingRow(l) {
+  var WHATSAPP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0c3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.48 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.148-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.347-.174-1.464-.54-2.788-1.72-1.03-.918-1.727-2.052-1.928-2.399-.201-.347-.021-.535.151-.707.154-.153.346-.4.518-.6.173-.199.23-.341.345-.567.114-.226.057-.427-.028-.6-.086-.174-.769-1.858-1.055-2.541-.277-.669-.559-.577-.769-.588a13.248 13.248 0 0 0-.657-.01c-.229 0-.601.086-.916.427-.315.34-1.201 1.171-1.201 2.858s1.229 3.316 1.4 3.547c.171.23 2.42 3.694 5.865 5.181.82.354 1.459.565 1.958.723.822.261 1.571.224 2.163.136.66-.098 2.031-.831 2.317-1.633.286-.802.286-1.489.201-1.633z"/></svg>';
+
+  // Araçlar (visit time, WhatsApp, map, note) is one flex row of
+  // .tool-chip elements built up conditionally — visit only once a visit
+  // is scheduled, map only once the listing has coordinates — rather than
+  // four separate table columns each carrying their own empty state.
+  function buildToolsRow(l) {
     var showVisit = l.durum === 'Ziyaret planlandı' || !!l.ziyaret_tarihi;
-    var visitCell = showVisit
-      ? '<span class="visit-wrap">' +
+    var html = '';
+    if (showVisit) {
+      html +=
+        '<span class="visit-wrap">' +
           '<input type="datetime-local" class="visit-input-hidden" id="visit-' + l.id + '" value="' + toDatetimeLocalValue(l.ziyaret_tarihi) + '" title="Ziyaret zamanı seç (KKTC saati)" onclick="if(this.showPicker){try{this.showPicker()}catch(e){}}" onchange="saveDateField(\'' + l.id + '\', this.value)">' +
-          '<span class="visit-btn">' +
-            (l.ziyaret_tarihi ? escapeHtml(formatVisitDisplay(l.ziyaret_tarihi)) : '📅') +
+          '<span class="tool-chip' + (l.ziyaret_tarihi ? '' : ' tool-chip--icon') + '">' +
+            CALENDAR_SVG + (l.ziyaret_tarihi ? escapeHtml(formatVisitDisplay(l.ziyaret_tarihi)) : '') +
           '</span>' +
-        '</span>'
-      : '';
+        '</span>';
+    }
+    html +=
+      '<button type="button" class="tool-chip tool-chip--icon tool-whatsapp" onclick="openWhatsApp(\'' + l.id + '\')" title="WhatsApp" aria-label="WhatsApp">' + WHATSAPP_SVG + '</button>';
+    if (showsOnMap(l)) {
+      html +=
+        '<button type="button" class="tool-chip tool-chip--icon tool-pin" onclick="openMapForListing(\'' + l.id + '\')" title="Haritada göster" aria-label="Haritada göster">' + PIN_SVG + '</button>';
+    }
+    html +=
+      '<span class="tool-note-wrap" id="notes-td-' + l.id + '" data-notlar="' + escapeHtml(l.notlar) + '">' + renderNotePreview(l.id, l.notlar) + '</span>';
+    return html;
+  }
+
+  function buildListingRow(l) {
     return '<tr id="row-' + l.id + '">' +
         '<td>' +
           (l.foto_url ? '<img class="table-thumb" src="' + escapeHtml(l.foto_url) + '" onerror="this.remove()">' : '') +
@@ -1024,7 +1030,7 @@
                 }).join('') +
               '</select>' +
             '</span>' +
-            '<input class="cell-input kira-amount" value="' + escapeHtml(l.kira) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'kira\',this.value)">' +
+            '<input class="cell-input" value="' + escapeHtml(l.kira) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'kira\',this.value)">' +
           '</div>' +
         '</td>' +
         '<td data-label="Oda"><input class="cell-input" value="' + escapeHtml(l.oda) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'oda\',this.value)"></td>' +
@@ -1039,18 +1045,7 @@
             '</select>' +
           '</span>' +
         '</td>' +
-        '<td class="visit-cell' + (showVisit ? '' : ' visit-cell-empty') + '"' + (showVisit ? ' data-label="Ziyaret"' : '') + '>' + visitCell + '</td>' +
-        '<td class="contact-cell">' +
-          '<div class="contact-buttons">' +
-            '<button type="button" class="wa-btn" onclick="openWhatsApp(\'' + l.id + '\')" title="WhatsApp" aria-label="WhatsApp">' +
-              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0c3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.48 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.148-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.347-.174-1.464-.54-2.788-1.72-1.03-.918-1.727-2.052-1.928-2.399-.201-.347-.021-.535.151-.707.154-.153.346-.4.518-.6.173-.199.23-.341.345-.567.114-.226.057-.427-.028-.6-.086-.174-.769-1.858-1.055-2.541-.277-.669-.559-.577-.769-.588a13.248 13.248 0 0 0-.657-.01c-.229 0-.601.086-.916.427-.315.34-1.201 1.171-1.201 2.858s1.229 3.316 1.4 3.547c.171.23 2.42 3.694 5.865 5.181.82.354 1.459.565 1.958.723.822.261 1.571.224 2.163.136.66-.098 2.031-.831 2.317-1.633.286-.802.286-1.489.201-1.633z"/></svg>' +
-            '</button>' +
-          '</div>' +
-        '</td>' +
-        '<td class="pin-cell' + (showsOnMap(l) ? '' : ' pin-cell-empty') + '"' + (showsOnMap(l) ? ' data-label="Harita"' : '') + '>' + (showsOnMap(l)
-          ? '<button type="button" class="pin-btn" onclick="openMapForListing(\'' + l.id + '\')" title="Haritada göster" aria-label="Haritada göster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C7.86 2 4.5 5.36 4.5 9.5c0 5.25 6.3 11.53 6.57 11.8a1.25 1.25 0 0 0 1.86 0c.27-.27 6.57-6.55 6.57-11.8C19.5 5.36 16.14 2 12 2zm0 10.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg></button>'
-          : '') + '</td>' +
-        '<td class="notes-cell" data-label="Not" id="notes-td-' + l.id + '" data-notlar="' + escapeHtml(l.notlar) + '">' + renderNotePreview(l.id, l.notlar) + '</td>' +
+        '<td class="tools-cell" data-label="Araçlar"><div class="tools-row">' + buildToolsRow(l) + '</div></td>' +
       '</tr>';
   }
 
@@ -1141,7 +1136,7 @@
         '</div>' +
         '<div class="cal-grid cal-grid-labels">' + WEEKDAY_LABELS.map(function (w) { return '<div class="cal-label">' + w + '</div>'; }).join('') + '</div>' +
         '<div class="cal-grid">' + cells + '</div>' +
-        (hasAnyVisits ? '' : '<p class="cal-empty-note">Henüz ziyaret zamanı girilmiş bir ilan yok — listeden bir ilana "Ziyaret Zamanı" ekleyince burada görünür.</p>') +
+        (hasAnyVisits ? '' : '<p class="cal-empty-note">Henüz ziyaret zamanı girilmiş bir ilan yok — bir ilanın durumunu "Ziyaret planlandı" yapınca Araçlar\'da zaman seçme seçeneği görünür.</p>') +
       '</div>';
   }
 
