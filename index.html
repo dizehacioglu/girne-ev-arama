@@ -125,16 +125,12 @@
   .fetch-msg.ok { color: var(--good); }
   .fetch-msg.warn { color: var(--warn); }
 
-  .star-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; line-height: 1; padding: 0; }
-  .star-btn.on { color: var(--star); }
-  .star-btn.off { color: var(--ink-faint); opacity: .5; }
-
-  .wa-btn, .call-btn {
-    display: inline-block; border: none; padding: .3rem .55rem; border-radius: 8px;
-    font-weight: 600; font-size: .78rem; white-space: nowrap; cursor: pointer; font-family: inherit;
+  .wa-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; width: 2.1rem; height: 2.1rem; border-radius: 8px;
+    background: var(--whatsapp); cursor: pointer; padding: 0;
   }
-  .wa-btn { background: var(--whatsapp); color: #08331c; }
-  .call-btn { background: var(--accent-soft); color: var(--accent); }
+  .wa-btn svg { width: 1.1rem; height: 1.1rem; fill: #fff; }
   .contact-buttons { display: flex; gap: .3rem; }
 
   .notes-toggle {
@@ -167,9 +163,24 @@
     display: inline-block; line-height: 1.3;
   }
   .title-link:hover { text-decoration: underline; }
+  /* Custom chevron for both <select>s below: the browser's native arrow
+     sat jammed against the pill's rounded edge with no breathing room, so
+     it's replaced with a mask (not background-image) — that lets it pick
+     up var(--ink-faint) directly and stay correct in dark mode too. */
+  .select-arrow-wrap { position: relative; display: inline-block; }
+  .select-arrow-wrap::after {
+    content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+    pointer-events: none; background-color: var(--ink-faint);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat center / contain;
+  }
+  .durum-select-wrap::after { right: .75rem; width: 11px; height: 11px; }
+  .mini-select-wrap::after { right: .4rem; width: 9px; height: 9px; }
+
   .durum-select {
-    min-width: 150px; border: none; border-radius: 999px; padding: .4rem .7rem .4rem .9rem;
+    min-width: 150px; border: none; border-radius: 999px; padding: .4rem 1.9rem .4rem .9rem;
     font-weight: 600; font-size: .8rem; font-family: inherit; cursor: pointer;
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
   }
   .durum-select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   /* Status pipeline, faint -> in progress -> resolved, so the stage reads
@@ -179,7 +190,11 @@
   .durum-select.status-2 { background: var(--status2-soft); color: var(--status2); }
   .durum-select.status-3 { background: var(--status3-soft); color: var(--status3); }
   .durum-select.status-4 { background: var(--status4-soft); color: var(--status4); }
-  .mahalle-cell { min-width: 210px; }
+  .mahalle-cell { min-width: 110px; max-width: 170px; }
+  .mahalle-input {
+    font-family: inherit; resize: none; overflow: hidden;
+    white-space: normal; word-break: break-word; line-height: 1.35; display: block;
+  }
   .muted-cell { color: var(--ink-faint); }
 
   .listings-table td.visit-cell { text-align: center; }
@@ -205,7 +220,10 @@
     font-size: .85rem; font-family: inherit;
   }
   .cell-input:hover, .cell-input:focus { border-color: var(--border); background: var(--surface-2); outline: none; }
-  .mini-select { width: auto; min-width: 48px; padding: .35rem .2rem; }
+  .mini-select {
+    width: auto; min-width: 54px; padding: .35rem 1.05rem .35rem .2rem;
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  }
   .kira-cell { display: flex; gap: .25rem; align-items: center; }
   .kira-cell .cell-input { min-width: 55px; }
   .contact-cell { min-width: 150px; }
@@ -337,8 +355,8 @@
 
   /* ---- Mobile: the wide table becomes a stack of cards, one per listing.
      Desktop columns become "LABEL   value" rows via data-label + ::before;
-     photo/title/contact get their own full-width treatment; the four
-     icon-only actions (favori/harita/not/sil) share one row. ---- */
+     photo/title/contact get their own full-width treatment; the two
+     icon-only actions (harita/sil) share one row. ---- */
   @media (max-width: 720px) {
     .wrap { padding: .8rem .6rem 2rem; }
     header.top h1 { font-size: 1.25rem; }
@@ -378,16 +396,15 @@
 
     .listings-table td.contact-cell { display: block; text-align: left; }
     .listings-table .contact-buttons { margin-top: .3rem; }
-    .listings-table .wa-btn, .listings-table .call-btn { flex: 1; text-align: center; padding: .6rem; font-size: .85rem; }
+    .listings-table .wa-btn { width: 2.4rem; height: 2.4rem; }
+    .listings-table .wa-btn svg { width: 1.25rem; height: 1.25rem; }
 
-    /* Not is now a real content row (own line, like Mahalle/Kira), so only
-       favori(★) / harita(📍) / sil(🗑) share the icon row. */
+    /* Not (12th) is a real content row of its own (like Mahalle/Kira), so
+       only harita(📍, 11th) / sil(🗑, 13th) share the icon row. */
     .listings-table td:nth-child(11),
-    .listings-table td:nth-child(12),
-    .listings-table td:nth-child(14) {
-      display: inline-flex; width: 33.33%; justify-content: center; border-bottom: none; padding: .6rem .2rem;
+    .listings-table td:nth-child(13) {
+      display: inline-flex; width: 50%; justify-content: center; border-bottom: none; padding: .6rem .2rem;
     }
-    .listings-table .star-btn { font-size: 1.4rem; }
     .listings-table .notes-toggle { font-size: 1.15rem; }
     .listings-table .btn-danger.btn-small { font-size: 1.05rem; padding: .3rem; background: none; }
     .listings-table td.notes-cell { max-width: none; }
@@ -492,7 +509,7 @@
     },
     addListing: function (fields) {
       ensureConfigured();
-      var row = Object.assign({ durum: DURUMLAR[0], favori: false }, fields);
+      var row = Object.assign({ durum: DURUMLAR[0] }, fields);
       return supabaseClient.from('ilanlar').insert(row).select().single()
         .then(function (res) {
           if (res.error) throw res.error;
@@ -832,9 +849,6 @@
     });
   }
 
-  function toggleFavorite(id, current) {
-    db.updateListing(id, { favori: !current }).then(load).catch(function (err) { alert('Güncellenemedi: ' + (err && err.message ? err.message : err)); });
-  }
   function changeStatus(id, value) {
     db.updateListing(id, { durum: value }).then(load).catch(function (err) { alert('Güncellenemedi: ' + (err && err.message ? err.message : err)); });
   }
@@ -910,12 +924,6 @@
     if (l.baglanti) msg += ' ' + l.baglanti;
     window.open('https://wa.me/' + digitsForWhatsApp(tel) + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
   }
-  function openCall(id) {
-    var l = findListing(id);
-    var tel = l && l.telefon && l.telefon.trim();
-    if (!tel) return;
-    window.location.href = 'tel:' + tel;
-  }
 
   function render() {
     // Every render fully rebuilds #listings, so any live Leaflet instance's
@@ -926,12 +934,10 @@
     var s = document.getElementById('summary');
     var listings = STATE.listings || [];
     var total = listings.length;
-    var favCount = listings.filter(function (l) { return l.favori; }).length;
     var contacted = listings.filter(function (l) { return l.durum !== DURUMLAR[0]; }).length;
     s.innerHTML =
       '<span class="chip"><b>' + total + '</b> ilan eklendi</span>' +
-      '<span class="chip"><b>' + contacted + '</b> ilerlemede</span>' +
-      '<span class="chip"><b>' + favCount + '</b> favori</span>';
+      '<span class="chip"><b>' + contacted + '</b> ilerlemede</span>';
 
     document.getElementById('viewListBtn').classList.toggle('active', STATE.view === 'list');
     document.getElementById('viewCalendarBtn').classList.toggle('active', STATE.view === 'calendar');
@@ -951,7 +957,7 @@
   var LISTINGS_TABLE_HEAD =
     '<thead><tr>' +
       '<th></th><th>İlan</th><th>Mahalle</th><th>Kira</th><th>Oda</th><th>Banyo</th><th>Süre</th>' +
-      '<th>Durum</th><th>Ziyaret Zamanı</th><th>İletişim</th><th></th><th></th><th>Not</th><th></th>' +
+      '<th>Durum</th><th>Ziyaret Zamanı</th><th>İletişim</th><th></th><th>Not</th><th></th>' +
     '</tr></thead>';
 
   function buildListingRow(l) {
@@ -973,14 +979,16 @@
             ? '<a class="title-link" href="' + escapeHtml(l.baglanti) + '" target="_blank" rel="noopener">' + escapeHtml(l.baslik || '(başlıksız)') + '</a>'
             : '<textarea class="cell-input title-input" rows="1" placeholder="Başlık" oninput="autoGrow(this)" onblur="saveField(\'' + l.id + '\',\'baslik\',this.value)">' + escapeHtml(l.baslik) + '</textarea>') +
         '</td>' +
-        '<td class="mahalle-cell" data-label="Mahalle"><input class="cell-input" value="' + escapeHtml(l.mahalle) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'mahalle\',this.value)"></td>' +
+        '<td class="mahalle-cell" data-label="Mahalle"><textarea class="cell-input mahalle-input" rows="1" placeholder="—" oninput="autoGrow(this)" onblur="saveField(\'' + l.id + '\',\'mahalle\',this.value)">' + escapeHtml(l.mahalle) + '</textarea></td>' +
         '<td data-label="Kira">' +
           '<div class="kira-cell">' +
-            '<select class="cell-input mini-select" onchange="saveField(\'' + l.id + '\',\'para_birimi\',this.value)">' +
-              ['£', '₺', '$', '€'].map(function (c) {
-                return '<option' + (c === l.para_birimi ? ' selected' : '') + '>' + c + '</option>';
-              }).join('') +
-            '</select>' +
+            '<span class="select-arrow-wrap mini-select-wrap">' +
+              '<select class="cell-input mini-select" onchange="saveField(\'' + l.id + '\',\'para_birimi\',this.value)">' +
+                ['£', '₺', '$', '€'].map(function (c) {
+                  return '<option' + (c === l.para_birimi ? ' selected' : '') + '>' + c + '</option>';
+                }).join('') +
+              '</select>' +
+            '</span>' +
             '<input class="cell-input" value="' + escapeHtml(l.kira) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'kira\',this.value)">' +
           '</div>' +
         '</td>' +
@@ -988,20 +996,22 @@
         '<td data-label="Banyo"><input class="cell-input" value="' + escapeHtml(l.banyo) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'banyo\',this.value)"></td>' +
         '<td data-label="Süre"><input class="cell-input" value="' + escapeHtml(l.kira_suresi) + '" placeholder="—" onblur="saveField(\'' + l.id + '\',\'kira_suresi\',this.value)"></td>' +
         '<td data-label="Durum">' +
-          '<select class="durum-select status-' + DURUMLAR.indexOf(l.durum) + '" onchange="changeStatus(\'' + l.id + '\', this.value)">' +
-            DURUMLAR.map(function (d) {
-              return '<option value="' + escapeHtml(d) + '"' + (d === l.durum ? ' selected' : '') + '>' + escapeHtml(d) + '</option>';
-            }).join('') +
-          '</select>' +
+          '<span class="select-arrow-wrap durum-select-wrap">' +
+            '<select class="durum-select status-' + DURUMLAR.indexOf(l.durum) + '" onchange="changeStatus(\'' + l.id + '\', this.value)">' +
+              DURUMLAR.map(function (d) {
+                return '<option value="' + escapeHtml(d) + '"' + (d === l.durum ? ' selected' : '') + '>' + escapeHtml(d) + '</option>';
+              }).join('') +
+            '</select>' +
+          '</span>' +
         '</td>' +
         '<td class="visit-cell' + (showVisit ? '' : ' visit-cell-empty') + '"' + (showVisit ? ' data-label="Ziyaret"' : '') + '>' + visitCell + '</td>' +
         '<td class="contact-cell">' +
           '<div class="contact-buttons">' +
-            '<button type="button" class="wa-btn" onclick="openWhatsApp(\'' + l.id + '\')">WhatsApp</button>' +
-            '<button type="button" class="call-btn" onclick="openCall(\'' + l.id + '\')">Ara</button>' +
+            '<button type="button" class="wa-btn" onclick="openWhatsApp(\'' + l.id + '\')" title="WhatsApp" aria-label="WhatsApp">' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.001 2C6.478 2 2 6.478 2 12c0 1.85.505 3.64 1.46 5.204L2 22l4.928-1.436A9.94 9.94 0 0 0 12.001 22C17.523 22 22 17.523 22 12S17.523 2 12.001 2zm0 18.09c-1.68 0-3.303-.457-4.716-1.32l-.338-.202-2.94.856.868-2.868-.22-.35A8.08 8.08 0 0 1 3.91 12c0-4.462 3.63-8.09 8.09-8.09 4.461 0 8.09 3.628 8.09 8.09 0 4.461-3.629 8.09-8.09 8.09z"/></svg>' +
+            '</button>' +
           '</div>' +
         '</td>' +
-        '<td><button class="star-btn ' + (l.favori ? 'on' : 'off') + '" onclick="toggleFavorite(\'' + l.id + '\',' + !!l.favori + ')">' + (l.favori ? '★' : '☆') + '</button></td>' +
         '<td>' + (showsOnMap(l)
           ? '<button type="button" class="notes-toggle" onclick="openMapForListing(\'' + l.id + '\')" title="Haritada göster">📍</button>'
           : '') + '</td>' +
@@ -1038,7 +1048,7 @@
     }
 
     container.innerHTML = html;
-    container.querySelectorAll('.title-input').forEach(autoGrow);
+    container.querySelectorAll('.title-input, .mahalle-input').forEach(autoGrow);
   }
 
   var WEEKDAY_LABELS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
