@@ -214,6 +214,15 @@
   tr.notes-row.open { display: table-row; }
   tr.notes-row td { background: var(--surface-2); }
 
+  .notes-chip:empty { display: none; }
+  .maps-chip {
+    display: inline-flex; align-items: center; gap: .4rem; text-decoration: none;
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink);
+    font-size: .82rem; font-weight: 600; padding: .4rem .7rem; border-radius: 10px;
+    margin-bottom: .5rem;
+  }
+  .maps-chip:hover { border-color: var(--accent); }
+
   .empty { text-align: center; color: var(--ink-faint); padding: 1.5rem 1rem; font-size: .9rem; }
 
   .add-toggle { display: block; width: 100%; text-align: center; }
@@ -558,6 +567,20 @@
     return String(s || '').replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
+  }
+
+  // Notes are one free-text field that also doubles as a place to paste a
+  // realtor's Google Maps link — pull the first URL out and show it as its
+  // own tappable chip instead of leaving it buried in the text.
+  var NOTE_URL_RE = /(https?:\/\/[^\s]+)/i;
+  function renderNotesChip(notlar) {
+    var m = NOTE_URL_RE.exec(notlar || '');
+    if (!m) return '';
+    return '<a class="maps-chip" href="' + escapeHtml(m[1]) + '" target="_blank" rel="noopener">🗺️ Haritada Aç</a>';
+  }
+  function updateNotesChip(id, value) {
+    var host = document.getElementById('chip-' + id);
+    if (host) host.innerHTML = renderNotesChip(value);
   }
 
   function decodeEntities(text) {
@@ -959,7 +982,10 @@
         '<td><button class="btn-danger btn-small" onclick="removeListing(\'' + l.id + '\')" title="Sil">🗑️</button></td>' +
       '</tr>' +
       '<tr class="notes-row' + (l.notlar ? ' open' : '') + '" id="' + noteId + '">' +
-        '<td colspan="14"><textarea placeholder="Not ekle..." onblur="saveField(\'' + l.id + '\',\'notlar\',this.value)">' + escapeHtml(l.notlar) + '</textarea></td>' +
+        '<td colspan="14">' +
+          '<div class="notes-chip" id="chip-' + l.id + '">' + renderNotesChip(l.notlar) + '</div>' +
+          '<textarea placeholder="Not ekle..." oninput="updateNotesChip(\'' + l.id + '\', this.value)" onblur="saveField(\'' + l.id + '\',\'notlar\',this.value)">' + escapeHtml(l.notlar) + '</textarea>' +
+        '</td>' +
       '</tr>';
   }
 
