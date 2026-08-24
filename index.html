@@ -127,10 +127,12 @@
 
   .wa-btn {
     display: inline-flex; align-items: center; justify-content: center;
-    border: none; width: 2.1rem; height: 2.1rem; border-radius: 8px;
+    border: none; width: 2.4rem; height: 2.4rem; border-radius: 50%;
     background: var(--whatsapp); cursor: pointer; padding: 0;
+    box-shadow: var(--shadow); transition: transform .12s ease;
   }
-  .wa-btn svg { width: 1.1rem; height: 1.1rem; fill: #fff; }
+  .wa-btn:hover { transform: scale(1.07); }
+  .wa-btn svg { width: 1.3rem; height: 1.3rem; fill: #fff; }
   .contact-buttons { display: flex; gap: .3rem; }
 
   .notes-toggle {
@@ -226,7 +228,7 @@
   }
   .kira-cell { display: flex; gap: .25rem; align-items: center; }
   .kira-cell .cell-input { min-width: 55px; }
-  .contact-cell { min-width: 150px; }
+  .contact-cell { width: 1%; }
 
   .maps-chip {
     display: inline-flex; align-items: center; gap: .4rem; text-decoration: none;
@@ -396,8 +398,8 @@
 
     .listings-table td.contact-cell { display: block; text-align: left; }
     .listings-table .contact-buttons { margin-top: .3rem; }
-    .listings-table .wa-btn { width: 2.4rem; height: 2.4rem; }
-    .listings-table .wa-btn svg { width: 1.25rem; height: 1.25rem; }
+    .listings-table .wa-btn { width: 2.7rem; height: 2.7rem; }
+    .listings-table .wa-btn svg { width: 1.4rem; height: 1.4rem; }
 
     /* Not (12th) is a real content row of its own (like Mahalle/Kira), so
        only harita(📍, 11th) / sil(🗑, 13th) share the icon row. */
@@ -922,6 +924,7 @@
     if (!tel) return;
     var msg = 'Merhaba, ilanınız hâlâ müsait mi acaba?';
     if (l.baglanti) msg += ' ' + l.baglanti;
+    msg += '\n\nMüsait değilse, şu kriterlere uyan başka bir yeriniz var mı acaba: yeni bina, manzaralı veya bahçeli, jeneratörü ve asansörü olsun, ferah ve güneşli, hareketli ama çok kalabalık olmayan bir çevrede, Girne merkezine yakın, kira en fazla 1500 £.';
     window.open('https://wa.me/' + digitsForWhatsApp(tel) + '?text=' + encodeURIComponent(msg), '_blank', 'noopener');
   }
 
@@ -1008,7 +1011,7 @@
         '<td class="contact-cell">' +
           '<div class="contact-buttons">' +
             '<button type="button" class="wa-btn" onclick="openWhatsApp(\'' + l.id + '\')" title="WhatsApp" aria-label="WhatsApp">' +
-              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.001 2C6.478 2 2 6.478 2 12c0 1.85.505 3.64 1.46 5.204L2 22l4.928-1.436A9.94 9.94 0 0 0 12.001 22C17.523 22 22 17.523 22 12S17.523 2 12.001 2zm0 18.09c-1.68 0-3.303-.457-4.716-1.32l-.338-.202-2.94.856.868-2.868-.22-.35A8.08 8.08 0 0 1 3.91 12c0-4.462 3.63-8.09 8.09-8.09 4.461 0 8.09 3.628 8.09 8.09 0 4.461-3.629 8.09-8.09 8.09z"/></svg>' +
+              '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0c3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.48 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.148-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.347-.174-1.464-.54-2.788-1.72-1.03-.918-1.727-2.052-1.928-2.399-.201-.347-.021-.535.151-.707.154-.153.346-.4.518-.6.173-.199.23-.341.345-.567.114-.226.057-.427-.028-.6-.086-.174-.769-1.858-1.055-2.541-.277-.669-.559-.577-.769-.588a13.248 13.248 0 0 0-.657-.01c-.229 0-.601.086-.916.427-.315.34-1.201 1.171-1.201 2.858s1.229 3.316 1.4 3.547c.171.23 2.42 3.694 5.865 5.181.82.354 1.459.565 1.958.723.822.261 1.571.224 2.163.136.66-.098 2.031-.831 2.317-1.633.286-.802.286-1.489.201-1.633z"/></svg>' +
             '</button>' +
           '</div>' +
         '</td>' +
